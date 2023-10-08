@@ -57,6 +57,9 @@ public:
 
     virtual inline DT *gpu() const { return (DT *)gpu_; }
     virtual inline DT *cpu() const { return (DT *)cpu_; }
+
+    virtual inline bool own_cpu() const { return cpu_ && cpu_bytes_ > 0; }
+    virtual inline bool own_gpu() const { return gpu_ && gpu_bytes_ > 0; }
 };
 
 #endif

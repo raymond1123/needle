@@ -53,7 +53,6 @@ void *BaseMemory::gpu_realloc(size_t bytes) {
 }
 
 void *BaseMemory::cpu_realloc(size_t bytes) {
-    printf("btyps=%lu\n", bytes);
     if (cpu_capacity_ < bytes) {
         release_cpu();
 
