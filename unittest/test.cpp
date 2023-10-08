@@ -8,6 +8,7 @@
 #include <string>
 
 #include "tensor.hpp"
+//#include "ops.cuh"
 
 namespace py = pybind11;
 
@@ -16,16 +17,22 @@ void declareTensor(py::module &m, const std::string& class_name) {
     py::class_<needle::NDArray::Tensor<Dtype>>(m, class_name.c_str())
         .def(py::init<const py::list&, const uint32_t, const std::string>(),
              py::arg("data"), py::arg("offset"), py::arg("device")="cuda")
+        .def(py::init<const std::shared_ptr<Memory<Dtype>>, 
+             std::vector<size_t>, std::vector<size_t>, 
+             const uint32_t, const std::string>(),
+             py::arg("data"), py::arg("shape"), py::arg("strides"), 
+             py::arg("offset"), py::arg("device")="cuda")
         .def("shape", &needle::NDArray::Tensor<Dtype>::shape)
         .def("strides", &needle::NDArray::Tensor<Dtype>::strides)
         .def("device", &needle::NDArray::Tensor<Dtype>::device)
         .def("ndim", &needle::NDArray::Tensor<Dtype>::ndim)
         .def("size", &needle::NDArray::Tensor<Dtype>::size)
-        .def("offset", &needle::NDArray::Tensor<Dtype>::offset);
+        .def("offset", &needle::NDArray::Tensor<Dtype>::offset)
+        .def("__add__", &needle::NDArray::Tensor<Dtype>::operator+);
 }
 
 PYBIND11_MODULE(unittest, m) {
-    declareTensor<int>(m, "TensorInt");
+    //declareTensor<int>(m, "TensorInt");
     declareTensor<float>(m, "TensorFloat32");
     // Add more instantiations for different Dtype types as needed
 }

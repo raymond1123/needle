@@ -4,8 +4,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
-#include "common.hpp"
 #include "memory.hpp"
+#include "ops.cuh"
 
 namespace needle {
 namespace NDArray{
@@ -15,16 +15,25 @@ namespace py = pybind11;
 template <typename Dtype>
 class Tensor {
 public:
-    //Tensor(py::array_t<Dtype> data,
     Tensor(const py::list &data,
            const uint32_t offset=0,
            const std::string device="cuda"): 
                 _offset(offset), _device(device){
 
-        std::cout << "offset=" << _offset << std::endl;
-        std::cout << "device=" << _device << std::endl;
+        _make_from_list(data);
 
-        _make(data);
+    }
+
+    Tensor(const std::shared_ptr<Memory<Dtype>> data,
+           const std::vector<size_t> shape,
+           const std::vector<size_t> strides,
+           const uint32_t offset=0,
+           const std::string device="cuda"): 
+                _shape(shape), _strides(strides),
+                _offset(offset), _device(device) {
+
+        __size = _calc_size();
+        _make_from_tensor(data);
 
     }
 
@@ -65,10 +74,41 @@ public:
         return _offset;
     }
 
+    void print() const {
+        
+    }
+
     //Tensor compact() {
     //    if(_is_compact()) return *this;
     //}
 
+    /* operations */
+    Tensor operator+(const Tensor& other) const {
+        Tensor res(other._handle, other._shape, 
+                   other._strides, other._offset, 
+                   other._device);
+
+        EwiseAdd<Dtype> edd;
+        if(_device==CPU)
+            edd.compute_cpu(reinterpret_cast<Dtype*>(_handle->cpu()), 
+                       reinterpret_cast<Dtype*>(other._handle->cpu()),
+                       reinterpret_cast<Dtype*>(res._handle->cpu()),
+                       __size);
+
+        if(_device==CUDA) {
+            edd.compute_gpu(reinterpret_cast<Dtype*>(_handle->gpu()), 
+                       reinterpret_cast<Dtype*>(other._handle->gpu()),
+                       reinterpret_cast<Dtype*>(res._handle->gpu()),
+                       __size);
+
+            checkCudaErrors(cudaMemcpy(_handle->cpu(), 
+                                       _handle->gpu(),
+                                       __size*sizeof(Dtype),
+                                       cudaMemcpyDeviceToHost));
+        }
+
+        return res;
+    }
 
 protected:
     // Recursive function to get the shape of a nested Python list
@@ -113,7 +153,28 @@ protected:
         return size;
     }
 
-    void _make(const py::list &data) {
+    void _make_from_tensor(const std::shared_ptr<Memory<Dtype>> data) {
+        //std::vector<size_t> _shape;
+        //std::vector<size_t> _strides;
+        //size_t _offset;
+        //std::string _device; // "cpu or cuda"
+        //std::shared_ptr<Memory<Dtype>> _handle;
+
+        _handle = std::make_shared<Memory<Dtype>>();
+
+        if(_device==CPU)
+            std::memcpy(_handle->cpu(), data->cpu(), __size*sizeof(Dtype));
+
+        if(_device==CUDA) {
+            _handle->gpu(__size);
+            checkCudaErrors(cudaMemcpy(_handle->gpu(), 
+                                       data->gpu(),
+                                       __size*sizeof(Dtype),
+                                       cudaMemcpyDeviceToDevice));
+        }
+    }
+
+    void _make_from_list(const py::list &data) {
         _shape = _get_nested_list_shape(data);
         _strides = _compact_strides();
 
@@ -129,9 +190,9 @@ protected:
         if(_device==CUDA) {
             _handle->gpu(__size);
             checkCudaErrors(cudaMemcpy(_handle->gpu(), 
-                                 _handle->cpu(),
-                                 __size*sizeof(Dtype),
-                                 cudaMemcpyHostToDevice));
+                                       _handle->cpu(),
+                                       __size*sizeof(Dtype),
+                                       cudaMemcpyHostToDevice));
         }
     }
 
