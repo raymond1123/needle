@@ -8,13 +8,13 @@
 #include "ops.cuh"
 
 namespace needle {
-//namespace NDArray{
 
 namespace py = pybind11;
 
 template <typename Dtype>
 class NDArray{
 public:
+    NDArray() = default;
     NDArray(const py::list &data,
            const uint32_t offset=0,
            const std::string device="cuda"): 
@@ -24,32 +24,46 @@ public:
 
     }
 
-    NDArray(const std::shared_ptr<Memory<Dtype>> data,
-           const std::vector<size_t> shape,
-           const std::vector<size_t> strides,
-           const uint32_t offset=0,
-           const std::string device="cuda"): 
+    NDArray(const std::vector<size_t> shape,
+            const std::vector<size_t> strides,
+            size_t offset = 0,
+            std::string device="cuda"): 
                 _shape(shape), _strides(strides),
                 _offset(offset), _device(device) {
 
         __size = _calc_size();
-        _make_from_tensor(data);
-
+        _make_from_tensor();
     }
 
     NDArray(const NDArray &other):
         _shape(other._shape), _strides(other._strides),
         _offset(other._offset), _device(other._device),
-        __size(other.__size), _handle(other._handle) {
-            std::cout << "in normal constructor" << std::endl;
-        }
+        __size(other.__size) {
+
+        std::cout << "in normal constructor" << std::endl;
+        __copy_init(other._handle);
+    }
 
     NDArray(NDArray &&other):
         _shape(other._shape), _strides(other._strides),
         _offset(other._offset), _device(other._device),
         __size(other.__size), _handle(other._handle) {
             std::cout << "in move constructor" << std::endl;
-        }
+    }
+
+    NDArray<float>& operator=(const NDArray<float>& other) {
+        std::cout << "in NDArray operator=" << std::endl;
+
+        _shape = other.shape();
+        _strides = other.strides();
+        _offset = other.offset();
+        _device = other.device();
+        __size = other.size();
+        __copy_init(other._handle);
+
+        return *this;
+    }
+
 
     virtual ~NDArray() {}
 
@@ -66,16 +80,28 @@ public:
         return _device;
     }
 
-    inline const size_t ndim() const {
+    inline size_t ndim() const {
         return _shape.size();
     }
 
-    inline const size_t size() const {
+    inline size_t size() const {
         return _calc_size();
     }
 
-    inline const size_t& offset() const {
+    inline size_t offset() const {
         return _offset;
+    }
+
+    Dtype* cpu() {
+        return _handle->cpu();
+    }
+
+    Dtype* gpu() {
+        return _handle->gpu();
+    }
+
+    bool has_data() {
+        return true?_handle.use_count()>0:false;
     }
 
     std::string print() {
@@ -91,29 +117,6 @@ public:
         stream << "]";
 
         return stream.str();
-    }
-
-    /* operations */
-    NDArray operator+(const NDArray &other) const {
-        NDArray res(other._handle, other._shape, 
-                   other._strides, other._offset, 
-                   other._device);
-
-        EwiseAdd<Dtype> edd;
-        if(_device==CPU)
-            edd.compute_cpu(reinterpret_cast<Dtype*>(_handle->cpu()), 
-                       reinterpret_cast<Dtype*>(other._handle->cpu()),
-                       reinterpret_cast<Dtype*>(res._handle->cpu()),
-                       __size);
-
-        if(_device==CUDA) {
-            edd.compute_gpu(reinterpret_cast<Dtype*>(_handle->gpu()), 
-                       reinterpret_cast<Dtype*>(other._handle->gpu()),
-                       reinterpret_cast<Dtype*>(res._handle->gpu()),
-                       __size);
-        }
-
-        return res;
     }
 
 protected:
@@ -159,17 +162,17 @@ protected:
         return size;
     }
 
-    void _make_from_tensor(const std::shared_ptr<Memory<Dtype>> data) {
+    void _make_from_tensor() {
         _handle = std::make_shared<Memory<Dtype>>();
 
         if(_device==CPU) {
             _handle->cpu(__size);
-            std::memcpy(_handle->cpu(), data->cpu(), __size*sizeof(Dtype));
+            //std::memcpy(_handle->cpu(), data->cpu(), __size*sizeof(Dtype));
         }
 
         if(_device==CUDA) {
             _handle->gpu(__size);
-            __gpu2gpu(data, _handle);
+            //__gpu2gpu(data, _handle);
         }
     }
 
@@ -222,6 +225,21 @@ protected:
     }
 
 private:
+    void __copy_init(std::shared_ptr<Memory<Dtype>> data) {
+        _handle = std::make_shared<Memory<Dtype>>();
+
+        if(_device==CPU) {
+            _handle->cpu(__size);
+            std::memcpy(_handle->cpu(), data->cpu(), __size*sizeof(Dtype));
+        }
+
+        if(_device==CUDA) {
+            _handle->gpu(__size);
+            __gpu2gpu(data, _handle);
+        }
+
+    }
+
     void __cpu2gpu(std::shared_ptr<Memory<Dtype>> src, 
                    std::shared_ptr<Memory<Dtype>> dst) {
         if(!dst->own_gpu())
@@ -277,7 +295,6 @@ private:
 
 };
 
-//} //namespace NDArray
 } //namespace needle
 
 #endif

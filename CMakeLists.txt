@@ -4,6 +4,9 @@ project(needle LANGUAGES CXX CUDA)  # set project name
 # Set the C++ standard
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CUDA_ARCHITECTURES 86)
+SET(CMAKE_BUILD_TYPE Debug)
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+
 SET(LOG4CPP "/usr/local/lib/liblog4cplus.so")
 
 # Find CUDA package

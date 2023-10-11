@@ -12,10 +12,17 @@ offset=4
 
 #tensor_float32 = unittest.TensorFloat32(shape, data, offset, devie='cuda')
 #tensor_int = unittest.TensorInt(shape, data, offset, devie='cuda')
-a = unittest.TensorFloat32(data=a_data, offset=offset, device='cuda')
-b = unittest.TensorFloat32(data=b_data, offset=offset, device='cuda')
+#a = unittest.Tensor(data=a_data, offset=offset, device='cuda')
+#b = unittest.Tensor(data=b_data, offset=offset, device='cuda')
+a = unittest.Tensor(data=a_data, device='cuda')
+b = unittest.Tensor(data=b_data, device='cuda')
 c = a+b
+d = a+b+c
 
+print(f'{a=}')
+print(f'{b=}')
+print(f'{c=}')
+print(f'{d=}')
 print(f'{a=}')
 print(f'{b=}')
 print(f'{c=}')
