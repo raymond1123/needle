@@ -26,13 +26,22 @@ public:
 
     NDArray(const std::vector<size_t> shape,
             const std::vector<size_t> strides,
-            size_t offset = 0,
-            std::string device="cuda"): 
+            size_t offset = 0, 
+            std::string device="cuda"):
                 _shape(shape), _strides(strides),
                 _offset(offset), _device(device) {
 
-        __size = _calc_size();
-        _make_from_tensor();
+        _make();
+    }
+
+    NDArray(const std::vector<size_t> shape,
+            size_t offset = 0, 
+            std::string device="cuda"):
+                _shape(shape), _offset(offset), 
+                _device(device) {
+
+        _strides = _compact_strides();
+        _make();
     }
 
     NDArray(const NDArray &other):
@@ -63,7 +72,6 @@ public:
 
         return *this;
     }
-
 
     virtual ~NDArray() {}
 
@@ -104,6 +112,13 @@ public:
         return true?_handle.use_count()>0:false;
     }
 
+    Dtype getitem(size_t idx) {
+        if(_device == CUDA)
+            __gpu2cpu(_handle, _handle);
+
+        return _handle->cpu()[idx];
+    }
+
     std::string print() {
         std::ostringstream stream;
         __gpu2cpu(_handle, _handle);
@@ -117,6 +132,31 @@ public:
         stream << "]";
 
         return stream.str();
+    }
+
+    void set_elements_all_ones() {
+        if(_device==CPU) {
+            //memset(_handle->cpu(), 
+            //       static_cast<Dtype>(1.0), 
+            //       __size*sizeof(Dtype));
+            Dtype *cpu_ptr = _handle->cpu();
+            for(size_t i=0; i<__size; ++i)
+                cpu_ptr[i] = static_cast<Dtype>(1.0);
+
+        }
+
+        if(_device==CUDA) {
+            _handle->cpu(__size);
+            Dtype *cpu_ptr = _handle->cpu();
+            for(size_t i=0; i<__size; ++i)
+                cpu_ptr[i] = static_cast<Dtype>(1.0);
+
+            __cpu2gpu(_handle, _handle);
+
+            //checkCudaErrors(cudaMemset(_handle->gpu(), 
+            //                           value,
+            //                           __size*sizeof(Dtype)));
+        }
     }
 
 protected:
@@ -162,17 +202,18 @@ protected:
         return size;
     }
 
-    void _make_from_tensor() {
+    void _make() {
+        __size = _calc_size();
+        std::cout << "_handle=" << _handle << std::endl;
         _handle = std::make_shared<Memory<Dtype>>();
+        std::cout << "device=" << _device << std::endl;
 
         if(_device==CPU) {
             _handle->cpu(__size);
-            //std::memcpy(_handle->cpu(), data->cpu(), __size*sizeof(Dtype));
         }
 
         if(_device==CUDA) {
             _handle->gpu(__size);
-            //__gpu2gpu(data, _handle);
         }
     }
 
@@ -226,7 +267,8 @@ protected:
 
 private:
     void __copy_init(std::shared_ptr<Memory<Dtype>> data) {
-        _handle = std::make_shared<Memory<Dtype>>();
+        //_handle = std::make_shared<Memory<Dtype>>();
+        _handle.reset(new Memory<Dtype>());
 
         if(_device==CPU) {
             _handle->cpu(__size);
@@ -242,8 +284,10 @@ private:
 
     void __cpu2gpu(std::shared_ptr<Memory<Dtype>> src, 
                    std::shared_ptr<Memory<Dtype>> dst) {
-        if(!dst->own_gpu())
+        if(!dst->own_gpu()){
+            std::cout << "3333333" << std::endl;
             dst->gpu(src->cpu_size());
+        }
 
         __size = src->cpu_size();
         if(src->own_cpu() && dst->own_gpu()) {
@@ -260,12 +304,22 @@ private:
             dst->cpu(src->gpu_size());
         __size = src->gpu_size();
 
+        std::cout << "cccccccccccc" << std::endl;
+        std::cout << "size=" << __size << std::endl;
+        std::cout << "size(Dtype)=" << sizeof(Dtype) << std::endl;
+        std::cout << "_handle->gpu()=" << _handle->gpu() << std::endl;
+        std::cout << "_handle->cpu()=" << _handle->cpu() << std::endl;
+        std::cout << "_handle->cpu_size()=" << _handle->cpu_size() << std::endl;
+        std::cout << "cccccccccccc" << std::endl;
+
         if(src->own_gpu() && dst->own_cpu()) {
             checkCudaErrors(cudaMemcpy(dst->cpu(),
                                        src->gpu(),
                                        __size*sizeof(Dtype),
                                        cudaMemcpyDeviceToHost));
         }
+        //cudaDeviceSynchronize(); // Wait for the GPU kernel to finish
+        std::cout << "dst->cpu()[1]=" << dst->cpu()[1] << std::endl;
     }
 
     void __gpu2gpu(std::shared_ptr<Memory<Dtype>> src, 

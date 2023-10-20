@@ -18,7 +18,9 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <tuple>
 #include <utility> // pair
+#include <unordered_map>
 #include <map>
 #include <set>
 

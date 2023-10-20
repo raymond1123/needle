@@ -23,7 +23,11 @@ public:
     TensorOP() = default;
     TensorOP(std::string op_name): _op_name(op_name) {}
 
-    virtual NDArray<Dtype> compute(const std::vector<const Tensor<Dtype>*> &inputs)=0;
+    virtual std::shared_ptr<NDArray<Dtype>> compute(const std::vector<const Tensor<Dtype>*> &inputs)=0;
+    /*
+    virtual std::vector<std::shared_ptr<NDArray<Dtype>*>> gradient(const Tensor<Dtype>* out_grad, 
+                                    const Tensor<Dtype>* node)=0;
+                                    */
 
     //virtual Tensor<Dtype> call(const std::vector<Tensor<Dtype>&> &inputs) {
     //    return Tensor<Dtype>::make_from_op(std::shared_ptr<OP<Dtype>>(this), 
@@ -43,13 +47,14 @@ public:
     EwiseAdd() = default;
     EwiseAdd(std::string op_name): TensorOP<Dtype>(op_name) {}
 
-    virtual NDArray<Dtype> compute(const std::vector<const Tensor<Dtype>*> &inputs) override {
+    virtual std::shared_ptr<NDArray<Dtype>> compute(const std::vector<const Tensor<Dtype>*> &inputs) override {
         std::string device = inputs[0]->device();
         assert(inputs.size()==2 && 
                (inputs[0]->device()==inputs[1]->device()) &&
                inputs[0]->size()==inputs[1]->size());
 
-        NDArray<Dtype> res = NDArray<Dtype>(inputs[0]->shape(),
+        std::shared_ptr<NDArray<Dtype>> res = std::make_shared<NDArray<Dtype>>(
+                                            inputs[0]->shape(),
                                             inputs[0]->strides(),
                                             inputs[0]->offset(),
                                             inputs[0]->device());
@@ -57,21 +62,35 @@ public:
         Dtype *a = nullptr, *b = nullptr, *c = nullptr;
 
         if(device==CPU) {
-            a = inputs[0]->_cached_data.cpu();
-            b = inputs[1]->_cached_data.cpu();
-            c = res.cpu();
+            a = inputs[0]->_cached_data->cpu();
+            b = inputs[1]->_cached_data->cpu();
+            c = res->cpu();
             __compute_cpu(a, b, c, inputs[0]->size());
         }
 
         if(device==CUDA) {
-            a = inputs[0]->_cached_data.gpu();
-            b = inputs[1]->_cached_data.gpu();
-            c = res.gpu();
+            a = inputs[0]->_cached_data->gpu();
+            b = inputs[1]->_cached_data->gpu();
+            c = res->gpu();
             __compute_gpu(a, b, c, inputs[0]->size());
         }
-
+        std::cout << "res addr=" << res << std::endl;
         return res;
     }
+
+    /*
+    virtual std::vector<std::shared_ptr<NDArray<Dtype>*>> gradient(const Tensor<Dtype>* out_grad, 
+                                    const Tensor<Dtype>* node) override {
+
+        std::vector<size_t> input0_shape = node->_inputs[0]->shape();
+        std::vector<size_t> input1_shape = node->_inputs[0]->shape();
+
+        std::vector<std::shared_ptr<NDArray<Dtype>*>> res[2];
+
+        //res[0] = std::make_shared<NDArray<Dtype>*>();
+
+    }
+    */
 
 private:
     void __compute_cpu(Dtype *a, Dtype *b, Dtype *c, size_t n) {
