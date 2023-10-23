@@ -36,7 +36,6 @@ public:
         _device(other._device) {}
     */
 
-
     virtual ~Tensor() {}
 
     inline const std::vector<size_t>& shape() const {
@@ -74,10 +73,11 @@ public:
 
     py::array_t<Dtype> numpy() {
         py::array_t<Dtype> result = py::array_t<Dtype>(this->shape());
+        _cached_data->numpy();
 
         auto ptr = result.mutable_data();
         for (size_t i = 0; i < size(); ++i) {
-            ptr[i] = static_cast<Dtype>(_cached_data->getitem(i));
+            ptr[i] = static_cast<Dtype>((*_cached_data)[i]);
         }
 
         return result;
@@ -124,6 +124,45 @@ public:
 
             2. here cannot use smart pointer, or it will reports segment fault
         */
+        const std::vector<const Tensor<Dtype>*> inputs = {this, &other};
+        Tensor<Dtype> res = Tensor<Dtype>(inputs, op);
+
+        return res.realize_cached_data();
+    }
+
+    Tensor<Dtype> operator-(const Tensor<Dtype> &other) {
+
+        std::shared_ptr<TensorOP<Dtype>> op = std::make_shared<EwiseMinus<Dtype>>("EwiseMinus");
+
+        const std::vector<const Tensor<Dtype>*> inputs = {this, &other};
+        Tensor<Dtype> res = Tensor<Dtype>(inputs, op);
+
+        return res.realize_cached_data();
+    }
+
+    Tensor<Dtype> operator*(const Tensor<Dtype> &other) {
+
+        std::shared_ptr<TensorOP<Dtype>> op = std::make_shared<EwiseMul<Dtype>>("EwiseMul");
+
+        const std::vector<const Tensor<Dtype>*> inputs = {this, &other};
+        Tensor<Dtype> res = Tensor<Dtype>(inputs, op);
+
+        return res.realize_cached_data();
+    }
+
+    Tensor<Dtype> operator/(const Tensor<Dtype> &other) {
+
+        std::shared_ptr<TensorOP<Dtype>> op = std::make_shared<EwiseDiv<Dtype>>("EwiseDiv");
+
+        const std::vector<const Tensor<Dtype>*> inputs = {this, &other};
+        Tensor<Dtype> res = Tensor<Dtype>(inputs, op);
+
+        return res.realize_cached_data();
+    }
+
+    Tensor<Dtype> matrix_multiply(const Tensor<Dtype> &other) {
+        std::shared_ptr<TensorOP<Dtype>> op = std::make_shared<EwiseAdd<Dtype>>("EwiseAdd");
+
         const std::vector<const Tensor<Dtype>*> inputs = {this, &other};
         Tensor<Dtype> res = Tensor<Dtype>(inputs, op);
 

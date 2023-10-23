@@ -112,13 +112,6 @@ public:
         return true?_handle.use_count()>0:false;
     }
 
-    Dtype getitem(size_t idx) {
-        if(_device == CUDA)
-            __gpu2cpu(_handle, _handle);
-
-        return _handle->cpu()[idx];
-    }
-
     std::string print() {
         std::ostringstream stream;
         __gpu2cpu(_handle, _handle);
@@ -157,6 +150,18 @@ public:
             //                           value,
             //                           __size*sizeof(Dtype)));
         }
+    }
+
+    Dtype& operator[](size_t idx) {
+        if(idx>=__size)
+            throw std::out_of_range("Index out of range");
+
+        return _handle->cpu()[idx];
+    }
+
+    void numpy() {
+        if(_device == CUDA)
+            __gpu2cpu(_handle, _handle);
     }
 
 protected:
@@ -204,9 +209,7 @@ protected:
 
     void _make() {
         __size = _calc_size();
-        std::cout << "_handle=" << _handle << std::endl;
         _handle = std::make_shared<Memory<Dtype>>();
-        std::cout << "device=" << _device << std::endl;
 
         if(_device==CPU) {
             _handle->cpu(__size);
@@ -285,7 +288,6 @@ private:
     void __cpu2gpu(std::shared_ptr<Memory<Dtype>> src, 
                    std::shared_ptr<Memory<Dtype>> dst) {
         if(!dst->own_gpu()){
-            std::cout << "3333333" << std::endl;
             dst->gpu(src->cpu_size());
         }
 
@@ -304,14 +306,6 @@ private:
             dst->cpu(src->gpu_size());
         __size = src->gpu_size();
 
-        std::cout << "cccccccccccc" << std::endl;
-        std::cout << "size=" << __size << std::endl;
-        std::cout << "size(Dtype)=" << sizeof(Dtype) << std::endl;
-        std::cout << "_handle->gpu()=" << _handle->gpu() << std::endl;
-        std::cout << "_handle->cpu()=" << _handle->cpu() << std::endl;
-        std::cout << "_handle->cpu_size()=" << _handle->cpu_size() << std::endl;
-        std::cout << "cccccccccccc" << std::endl;
-
         if(src->own_gpu() && dst->own_cpu()) {
             checkCudaErrors(cudaMemcpy(dst->cpu(),
                                        src->gpu(),
@@ -319,7 +313,6 @@ private:
                                        cudaMemcpyDeviceToHost));
         }
         //cudaDeviceSynchronize(); // Wait for the GPU kernel to finish
-        std::cout << "dst->cpu()[1]=" << dst->cpu()[1] << std::endl;
     }
 
     void __gpu2gpu(std::shared_ptr<Memory<Dtype>> src, 

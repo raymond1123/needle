@@ -24,23 +24,6 @@ needle::Tensor<Dtype> ones(const py::tuple &shape,
     return res.all_ones();
 }
 
-/*
-template <typename Dtype>
-void declareNDArray(py::module &m, const std::string& class_name) {
-    py::class_<needle::NDArray<Dtype>>(m, class_name.c_str())
-        .def(py::init<const py::list&, const uint32_t, const std::string>(),
-             py::arg("data"), py::arg("offset"), py::arg("device")="cuda")
-        .def("shape", &needle::NDArray<Dtype>::shape)
-        .def("strides", &needle::NDArray<Dtype>::strides)
-        .def("device", &needle::NDArray<Dtype>::device)
-        .def("ndim", &needle::NDArray<Dtype>::ndim)
-        .def("size", &needle::NDArray<Dtype>::size)
-        .def("offset", &needle::NDArray<Dtype>::offset);
-        //.def("__add__", &needle::NDArray<Dtype>::operator+)
-        //.def("__repr__", &needle::NDArray<Dtype>::print);
-}
-*/
-
 template <typename Dtype>
 void declareTensor(py::module &m, const std::string& class_name) {
     py::class_<needle::Tensor<Dtype>>(m, class_name.c_str())
@@ -50,10 +33,13 @@ void declareTensor(py::module &m, const std::string& class_name) {
              py::arg("shape"), py::arg("device")="cuda")
         .def("numpy", &needle::Tensor<Dtype>::numpy)
         .def("__add__", &needle::Tensor<Dtype>::operator+)
+        .def("__sub__", &needle::Tensor<Dtype>::operator-)
+        .def("__mul__", &needle::Tensor<Dtype>::operator*)
+        .def("__truediv__", &needle::Tensor<Dtype>::operator/)
         .def("__repr__", &needle::Tensor<Dtype>::print);
 }
 
-PYBIND11_MODULE(unittest, m) {
+PYBIND11_MODULE(Unittest, m) {
     declareTensor<float>(m, "Tensor");
     m.def("ones", &ones<float>, "Create a tensor of ones",
           py::arg("shape"), py::arg("device") = "cuda");

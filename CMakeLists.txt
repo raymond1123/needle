@@ -18,29 +18,30 @@ find_package(CUDA REQUIRED)
 #include_directories(${CUDA_HEAD} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
 include_directories(${CUDA_INCLUDE_DIRS} 
                     ${CMAKE_SOURCE_DIR} 
-                    ${CMAKE_SOURCE_DIR}/include)
+                    ${CMAKE_SOURCE_DIR}/include
+                    ${CMAKE_SOURCE_DIR}/kernel/include)
 
 message(STATUS "Found cuda, building cuda backend")
 message(STATUS "cuda header: ${CUDA_INCLUDE_DIRS}")
 
 # Add your source files
 FILE(GLOB_RECURSE TEST_SRC_FILES
-    ${CMAKE_SOURCE_DIR}/unittest/test.cpp
+    ${CMAKE_SOURCE_DIR}/unit_test/test.cpp
     ${CMAKE_SOURCE_DIR}/lib/*.cpp
     ${CMAKE_SOURCE_DIR}/kernel/*.cu)
 
 # pybind11
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_part/pybind11)
-pybind11_add_module(unittest ${TEST_SRC_FILES})
+pybind11_add_module(Unittest ${TEST_SRC_FILES})
 
 # Create an executable
 #add_executable(unittest ${TEST_SRC_FILES})
 
 # Link against the CUDA library
-target_link_libraries(unittest PUBLIC ${CUDA_LIBRARIES} ${LOG4CPP})
+target_link_libraries(Unittest PUBLIC ${CUDA_LIBRARIES} ${LOG4CPP})
 
 # directly output to ffi folder
-set_target_properties(unittest
+set_target_properties(Unittest
     PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/unittest/)
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/unit_test/)
 

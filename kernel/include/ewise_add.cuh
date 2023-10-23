@@ -1,42 +1,13 @@
-#ifndef __OPS_CUH__
-#define __OPS_CUH__
+#ifndef __EWADD_CUH__
+#define __EWADD_CUH__
 
-#include "common.hpp"
-#include "tensor.hpp"
+#include "ops.cuh"
 
 namespace needle {
-template <typename Dtype> class Value;
+
 template <typename Dtype> class Tensor;
 template <typename Dtype> class NDArray;
-
-/*
-template<typename Dtype>
-class OP {
-public:
-    virtual Tensor<Dtype> compute(const std::vector<std::shared_ptr<Tensor<Dtype>>> &inputs)=0;
-};
-*/
-
-template<typename Dtype>
-class TensorOP {
-public:
-    TensorOP() = default;
-    TensorOP(std::string op_name): _op_name(op_name) {}
-
-    virtual std::shared_ptr<NDArray<Dtype>> compute(const std::vector<const Tensor<Dtype>*> &inputs)=0;
-    /*
-    virtual std::vector<std::shared_ptr<NDArray<Dtype>*>> gradient(const Tensor<Dtype>* out_grad, 
-                                    const Tensor<Dtype>* node)=0;
-                                    */
-
-    //virtual Tensor<Dtype> call(const std::vector<Tensor<Dtype>&> &inputs) {
-    //    return Tensor<Dtype>::make_from_op(std::shared_ptr<OP<Dtype>>(this), 
-    //                                       inputs);
-    //}
-
-public:
-    std::string _op_name;
-};
+template <typename Dtype> class TensorOP;
 
 template<typename Dtype>
 void vec_add_wrapper(Dtype *a, Dtype *b, Dtype *c, size_t n);
@@ -74,7 +45,6 @@ public:
             c = res->gpu();
             __compute_gpu(a, b, c, inputs[0]->size());
         }
-        std::cout << "res addr=" << res << std::endl;
         return res;
     }
 
@@ -104,7 +74,7 @@ private:
     }
 };
 
-}
+} //namespace needle
 
 #endif
 
