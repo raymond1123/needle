@@ -5,43 +5,40 @@ project(needle LANGUAGES CXX CUDA)  # set project name
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CUDA_ARCHITECTURES 86)
 SET(CMAKE_BUILD_TYPE Debug)
+#SET(CMAKE_BUILD_TYPE Release)  # enable debug symbols for gdb debugging
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
-SET(LOG4CPP "/usr/local/lib/liblog4cplus.so")
+set(THIRD_PARTY "${PROJECT_SOURCE_DIR}/3rdparty")
+
+set(CUTLASS_PATH ${THIRD_PARTY}/cutlass/build/install)
+set(CUTLASS_LIB ${CUTLASS_PATH}/lib/libcutlass.so)
+set(CUTLASS_HEAD ${CUTLASS_PATH}/include)
 
 # Find CUDA package
 find_package(CUDA REQUIRED)
 
-# Include directories
-#SET(CUDA_HEAD "/usr/local/cuda-11.4/targets/x86_64-linux/include/")
-#include_directories(${CUDA_INCLUDE_DIRS}
-#include_directories(${CUDA_HEAD} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
-include_directories(${CUDA_INCLUDE_DIRS} 
-                    ${CMAKE_SOURCE_DIR} 
-                    ${CMAKE_SOURCE_DIR}/include
-                    ${CMAKE_SOURCE_DIR}/kernel/include)
+include_directories(${PROJECT_SOURCE_DIR}/include
+            ${CUTLASS_HEAD} ${CUDA_INCLUDE_DIRS})
 
 message(STATUS "Found cuda, building cuda backend")
 message(STATUS "cuda header: ${CUDA_INCLUDE_DIRS}")
 
 # Add your source files
-FILE(GLOB_RECURSE TEST_SRC_FILES
-    ${CMAKE_SOURCE_DIR}/unit_test/test.cpp
-    ${CMAKE_SOURCE_DIR}/lib/*.cpp
-    ${CMAKE_SOURCE_DIR}/kernel/*.cu)
+file(GLOB_RECURSE SRC_FILES
+    ${PROJECT_SOURCE_DIR}/lib/tensor.cpp)
 
 # pybind11
-add_subdirectory(${CMAKE_SOURCE_DIR}/third_part/pybind11)
-pybind11_add_module(Unittest ${TEST_SRC_FILES})
+add_subdirectory(${THIRD_PARTY}/pybind11)
+pybind11_add_module(tensor ${SRC_FILES})
 
 # Create an executable
 #add_executable(unittest ${TEST_SRC_FILES})
 
 # Link against the CUDA library
-target_link_libraries(Unittest PUBLIC ${CUDA_LIBRARIES} ${LOG4CPP})
+target_link_libraries(tensor PUBLIC ${CUDA_LIBRARIES})
 
 # directly output to ffi folder
-set_target_properties(Unittest
+set_target_properties(tensor
     PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/unit_test/)
 
