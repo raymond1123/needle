@@ -1,46 +1,30 @@
-#ifndef __TENSOR_OP__
-#define __TENSOR_OP__
+#ifndef __GENERIC_OP__
+#define __GENERIC_OP__
 
-constexpr int kBlockSize = 256;
-constexpr int kNumWaves = 32;
+#include "common.hpp"
 
-template<typename FunctorT, typename R, typename... IN>
-__global__ void __launch_bounds__(kBlockSize)
-ApplyGeneric(FunctorT factory, int64_t n, R r, const IN... in) {
-  factory(n, r, in...);
-}
+template<typename Dtype> class Tensor;
+template<typename Dtype> class BaseTensor;
 
-template<typename FunctorT, typename R, typename... IN>
-class OP {
+template<typename Dtype>
+class GenericOp {
+//protected:
+//    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+
 public:
-  cudaError_t Launch(FunctorT factory, int64_t n, R r, const IN... in) {
-    return _launch_kernel(factory, n, r, in...);
-  }
+    GenericOp() {};
+
+    virtual std::shared_ptr<BaseTensor<Dtype>> compute(
+                std::vector<std::shared_ptr<BaseTensor<Dtype>>> inputs)=0;
+    virtual std::shared_ptr<BaseTensor<Dtype>> launch_kernel(
+                std::vector<std::shared_ptr<BaseTensor<Dtype>>> inputs)=0;
+
+    virtual Tensor<Dtype> operator()(const std::shared_ptr<GenericOp<Dtype>> op,
+                                   std::vector<Tensor<Dtype>*>& inputs) const=0;
 
 protected:
-  cudaError_t _launch_kernel(FunctorT factory, int64_t n, R r, const IN... in) {
-    int num_blocks;
-    cudaError_t err = _get_num_blocks(n, &num_blocks);
-    if (err != cudaSuccess) { return err; }
-
-    ApplyGeneric<FunctorT, R, IN...><<<num_blocks, kBlockSize, 0>>>(
-        factory, n, r, in...);
-
-    return cudaPeekAtLastError();
-  }
-
-  virtual inline cudaError_t _get_num_blocks(int64_t n, int* num_blocks) {
-    int dev, sm_count, tpm;
-    cudaError_t err = cudaGetDevice(&dev);
-    if (err != cudaSuccess) { return err; }
-    err = cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, dev);
-    if (err != cudaSuccess) { return err; }
-    err = cudaDeviceGetAttribute(&tpm, cudaDevAttrMaxThreadsPerMultiProcessor, dev);
-    if (err != cudaSuccess) { return err; }
-    *num_blocks = std::max<int>(1, std::min<int64_t>((n + kBlockSize - 1) / kBlockSize,
-                                                     sm_count * tpm / kBlockSize * kNumWaves));
-    return cudaSuccess;
-  }
+    virtual inline cudaError_t _get_num_blocks(int* num_blocks)=0;
+    std::vector<const Tensor<Dtype>*> _inputs;
 };
 
 #endif

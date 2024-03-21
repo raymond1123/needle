@@ -16,17 +16,13 @@ public:
     py::array_t<Dtype> to_np(std::vector<size_t> shape,
                std::vector<size_t> strides,
                size_t offset);
-    inline size_t size();
+    inline size_t size() {return __size;}
+    inline Dtype* get_ptr() {return __ptr;}
 
 private:
     Dtype *__ptr;
     size_t __size;
 };
-
-template<typename Dtype>
-size_t CpuArray<Dtype>::size() {
-    return __size;
-}
 
 template<typename Dtype>
 CpuArray<Dtype>::CpuArray(const size_t size): __size(size) {

@@ -25,7 +25,15 @@ message(STATUS "cuda header: ${CUDA_INCLUDE_DIRS}")
 
 # Add your source files
 file(GLOB_RECURSE SRC_FILES
-    ${PROJECT_SOURCE_DIR}/lib/tensor.cpp)
+    ${PROJECT_SOURCE_DIR}/lib/tensor.cu)
+
+# Set DEBUG to ON by default
+option(DEBUG "Enable debug mode" ON)
+
+# Add a definition if DEBUG is enabled
+if (DEBUG)
+    add_definitions(-DDEBUG)
+endif()
 
 # pybind11
 add_subdirectory(${THIRD_PARTY}/pybind11)

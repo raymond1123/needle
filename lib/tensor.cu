@@ -1,8 +1,7 @@
-#include "tensor.hpp"
+#include "tensor.cuh"
 
 namespace py = pybind11;
 
-// Define bindings for the Tensor class
 template<typename Dtype>
 void bind_tensor(py::module &m, const char *name) {
 
@@ -11,14 +10,19 @@ void bind_tensor(py::module &m, const char *name) {
         .value("CUDA", BackendType::CUDA)
         .export_values();
 
-    py::class_<Tensor<Dtype>>(m, name)
-        .def(py::init<py::array_t<Dtype>&, BackendType>())
+    // Bind Tensor class
+    py::class_<Tensor<Dtype>>(m, "Tensor", py::buffer_protocol())
+        .def(py::init<py::array_t<Dtype>&, BackendType>(),
+            py::arg("np_array"),
+            py::arg("backend"))
+
         .def("to_numpy", &Tensor<Dtype>::to_numpy)
+        .def("device", &Tensor<Dtype>::device)
         .def("shape", &Tensor<Dtype>::shape)
+        .def("__add__", &Tensor<Dtype>::operator+, py::is_operator())
         ;
 }
 
-// Create the Pybind11 module
 PYBIND11_MODULE(tensor, m) {
     bind_tensor<float>(m, "Tensor");
 }

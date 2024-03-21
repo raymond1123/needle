@@ -10,16 +10,29 @@ offset = 0
 arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7., 8., 9.]], 
         dtype=np.float32)
 
+# Create a NumPy array with a specific data type (float32 in this case)
+brr = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1., 1., 1.]], 
+        dtype=np.float32)
+
 # Create an instance of the FloatTensor class
-ft1 = ts.Tensor(arr, ts.BackendType.CUDA)
-ft2 = ts.Tensor(arr, ts.BackendType.CPU)
-
-print(ft1.shape())
-print(ft2.shape())
-
+#print('ft1:')
+ft1 = ts.Tensor(np_array=arr, backend=ts.BackendType.CUDA)
+#print(ft1.shape())
 out1 = ft1.to_numpy()
-out2 = ft2.to_numpy()
+#print(out1)
+#print('\n')
 
-print(out1)
-print(out2)
+#print('ft2:')
+#ft2 = ts.Tensor(arr, ts.BackendType.CPU)
+#print(ft2.shape())
+#out2 = ft2.to_numpy()
+#print(out2)
+
+ft3 = ts.Tensor(brr, ts.BackendType.CUDA)
+ft4 = ft1+ft3
+#print(ft4.to_numpy())
+
+
+ft5 = ft4+ft3
+print(ft5.to_numpy())
 

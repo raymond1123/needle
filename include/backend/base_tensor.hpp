@@ -2,16 +2,22 @@
 #define __BASE_TENSOR_HPP__
 
 #include "common.hpp"
-#include "backend/cpu_tensor.hpp"
-#include "backend/cuda_tensor.hpp"
+
+namespace py = pybind11;
 
 template<typename Dtype>
 class BaseTensor {
 public:
+    BaseTensor(const std::vector<size_t>& shape);
     BaseTensor(py::array_t<Dtype>& np_array);
     virtual ~BaseTensor()=default;
 
     virtual py::array_t<Dtype> to_numpy()=0;
+    virtual inline size_t size()=0;
+    virtual void zeros()=0;
+    virtual BackendType device()=0;
+    virtual inline Dtype* cached_ptr()=0;
+
     virtual std::vector<size_t> shape();
 
 protected:
@@ -26,6 +32,12 @@ protected:
     std::vector<size_t> __shape, __strides;
     size_t __offset;
 };
+
+template<typename Dtype>
+BaseTensor<Dtype>::BaseTensor(const std::vector<size_t>& shape):
+    __shape(shape), __strides(shape), __offset(0) {
+    _compact_strides();
+}
 
 template<typename Dtype>
 BaseTensor<Dtype>::BaseTensor(py::array_t<Dtype>& np_array): __offset(0) {
