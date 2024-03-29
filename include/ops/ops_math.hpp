@@ -3,6 +3,7 @@
 
 #include "backend/cpu_tensor.hpp"
 #include "backend/cuda_tensor.hpp"
-#include "ops/ewadd.cuh"
+#include "ops/ew.cuh"
+#include "ops/reshape.cuh"
 
 #endif

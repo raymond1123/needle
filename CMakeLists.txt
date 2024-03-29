@@ -48,5 +48,5 @@ target_link_libraries(tensor PUBLIC ${CUDA_LIBRARIES})
 # directly output to ffi folder
 set_target_properties(tensor
     PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/unit_test/)
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/python/)
 

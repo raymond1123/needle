@@ -15,17 +15,25 @@ public:
     virtual py::array_t<Dtype> to_numpy()=0;
     virtual inline size_t size()=0;
     virtual void zeros()=0;
+    virtual void ones()=0;
     virtual BackendType device()=0;
     virtual inline Dtype* cached_ptr()=0;
+    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const=0;
 
-    virtual std::vector<size_t> shape();
+    inline std::vector<size_t> shape() {return __shape;}
+    inline std::vector<size_t> strides() {return __strides;}
+    void set_shape(std::vector<size_t> new_shape) {
+        __shape = new_shape;
+        compact_strides();
+    }
+
+    void compact_strides();
 
 protected:
     virtual void _from_numpy(py::array_t<Dtype> &np_array)=0;
 
     size_t _prod(const std::vector<size_t> &shape);
     void _get_info_from_numpy(py::array_t<Dtype> &np_array);
-    void _compact_strides();
 
 protected:
     py::dtype __dtype;
@@ -36,7 +44,7 @@ protected:
 template<typename Dtype>
 BaseTensor<Dtype>::BaseTensor(const std::vector<size_t>& shape):
     __shape(shape), __strides(shape), __offset(0) {
-    _compact_strides();
+    compact_strides();
 }
 
 template<typename Dtype>
@@ -53,7 +61,7 @@ size_t BaseTensor<Dtype>::_prod(const std::vector<size_t>& shape) {
 }
 
 template<typename Dtype>
-void BaseTensor<Dtype>::_compact_strides() {
+void BaseTensor<Dtype>::compact_strides() {
     std::vector<size_t> r_shape(__shape);
     reverse(r_shape.begin(), r_shape.end());
 
@@ -82,11 +90,6 @@ void BaseTensor<Dtype>::_get_info_from_numpy(py::array_t<Dtype>& np_array) {
 
     if (__dtype.is(py::dtype::of<float>()))
         std::cout << "The array has float precision." << std::endl;
-}
-
-template<typename Dtype>
-std::vector<size_t> BaseTensor<Dtype>::shape() {
-    return __shape;
 }
 
 #endif

@@ -15,13 +15,19 @@ public:
     explicit CudaTensor(const std::vector<size_t>& shape);
     ~CudaTensor() {}
 
+    CudaTensor(const CudaTensor&)=delete;
+    CudaTensor& operator=(const CudaTensor&)=delete;
+
     virtual py::array_t<Dtype> to_numpy() override;
     virtual void zeros() override;
+    virtual void ones() override;
 
     inline virtual size_t size() override {return this->__array->size();}
-    virtual inline Dtype* cached_ptr() {
+    virtual inline Dtype* cached_ptr() override {
         return this->__array->get_ptr();
     }
+
+    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const override;
     virtual inline BackendType device() override {return BackendType::CUDA;}
 
 protected:
@@ -50,7 +56,12 @@ CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape):
 
 template<typename Dtype>
 void CudaTensor<Dtype>::zeros() {
-    this->__array->set_all_zeros();
+    this->__array->fill_val(static_cast<Dtype>(0));
+}
+
+template<typename Dtype>
+void CudaTensor<Dtype>::ones() {
+    this->__array->fill_val(static_cast<Dtype>(1));
 }
 
 template<typename Dtype>
@@ -83,6 +94,16 @@ py::array_t<Dtype> CudaTensor<Dtype>::to_numpy() {
     return py::array_t<Dtype>(this->__shape, numpy_strides, 
                               host_ptr + this->__offset, 
                               deallocate_buffer);
+}
+
+template<typename Dtype>
+std::shared_ptr<BaseTensor<Dtype>> CudaTensor<Dtype>::deep_cpy_cached_data() const {
+    std::shared_ptr<BaseTensor<Dtype>> cached_data = 
+        std::make_shared<CudaTensor<Dtype>>(this->__shape);
+
+    __array->device2device(cached_data->cached_ptr());
+
+    return cached_data;
 }
 
 #endif

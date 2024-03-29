@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <iterator>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -35,6 +36,35 @@
 enum class BackendType: int {
     CPU = 0,
     CUDA = 1
+};
+
+enum class OpType: int {
+    EWAddTensor = 0,
+    EWAddScalar = 1,
+    EWMinusTensor = 2,
+    EWMinusScalar = 3,
+    EWMulTensor = 4,
+    EWMulScalar = 5,
+    EWDivTensor = 6,
+    EWDivScalar = 7,
+    EWPowTensor = 8,
+    EWPowScalar = 9,
+    MatMul = 10,
+    Neg = 11,
+    Log = 12,
+    Exp = 13,
+    Relu = 14,
+    Tanh = 15,
+    Reshape = 16,
+    BroadcastTo = 17,
+    Transpose = 18,
+    Summation = 19,
+    Flip = 20,
+    Dilate = 21,
+    Undilate = 22,
+    Stack = 23,
+    Split = 24,
+    Conv = 25
 };
 
 enum class DataType: int{
