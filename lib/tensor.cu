@@ -16,7 +16,8 @@ template<typename Dtype>
 void bind_operator_iplus_tensor(py::class_<Tensor<Dtype>>& tensor_class) {
     tensor_class.def("__iadd__",
         [](Tensor<Dtype>& self, Tensor<Dtype>& other) {
-            return self + other;
+            self += other;
+            return self;
         });
 }
 
@@ -123,8 +124,6 @@ void bind_tensor(py::module &m, const char *name) {
 
         .def("reshape", &Tensor<Dtype>::reshape)
         .def("to_numpy", &Tensor<Dtype>::to_numpy)
-        .def("idx", &Tensor<Dtype>::idx)
-        .def("inputs_idx", &Tensor<Dtype>::inputs_idx)
         .def("device", &Tensor<Dtype>::device)
         .def("shape", &Tensor<Dtype>::shape)
         .def("strides", &Tensor<Dtype>::strides)

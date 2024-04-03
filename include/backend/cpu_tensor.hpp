@@ -11,7 +11,10 @@ namespace py = pybind11;
 template<typename Dtype>
 class CpuTensor: public BaseTensor<Dtype> {
 public:
+    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
     explicit CpuTensor(const std::vector<size_t>& shape);
+    CpuTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
+               std::vector<cached_data_type> inputs): BaseTensor<Dtype>(op, inputs) {}
     explicit CpuTensor(py::array_t<Dtype>& np_array);
     ~CpuTensor() {}
 

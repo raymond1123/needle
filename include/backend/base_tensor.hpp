@@ -2,14 +2,22 @@
 #define __BASE_TENSOR_HPP__
 
 #include "common.hpp"
+#include "ops/generic_op.cuh"
 
 namespace py = pybind11;
+
 
 template<typename Dtype>
 class BaseTensor {
 public:
+    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
     BaseTensor(const std::vector<size_t>& shape);
     BaseTensor(py::array_t<Dtype>& np_array);
+
+    BaseTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
+               std::vector<cached_data_type> inputs): 
+        op(op), inputs(inputs), cached(false) {}
+
     virtual ~BaseTensor()=default;
 
     virtual py::array_t<Dtype> to_numpy()=0;
@@ -27,6 +35,9 @@ public:
         compact_strides();
     }
 
+    /* input cdata is shared_ptr of itself*/
+    cached_data_type realized_cached_data(cached_data_type cdata=nullptr);
+
     void compact_strides();
 
 protected:
@@ -35,20 +46,29 @@ protected:
     size_t _prod(const std::vector<size_t> &shape);
     void _get_info_from_numpy(py::array_t<Dtype> &np_array);
 
+public:
+    std::shared_ptr<GenericOp<Dtype>> op;
+    std::vector<cached_data_type> inputs;
+    std::shared_ptr<BaseTensor<Dtype>> grad;
+    bool cached;
+    int tensor_idx;
+
 protected:
     py::dtype __dtype;
     std::vector<size_t> __shape, __strides;
     size_t __offset;
+    bool __cached;
 };
 
 template<typename Dtype>
 BaseTensor<Dtype>::BaseTensor(const std::vector<size_t>& shape):
-    __shape(shape), __strides(shape), __offset(0) {
+    __shape(shape), __strides(shape), __offset(0), cached(false) {
     compact_strides();
 }
 
 template<typename Dtype>
-BaseTensor<Dtype>::BaseTensor(py::array_t<Dtype>& np_array): __offset(0) {
+BaseTensor<Dtype>::BaseTensor(py::array_t<Dtype>& np_array): 
+    __offset(0), cached(false) {
     _get_info_from_numpy(np_array);
 }
 
@@ -90,6 +110,18 @@ void BaseTensor<Dtype>::_get_info_from_numpy(py::array_t<Dtype>& np_array) {
 
     if (__dtype.is(py::dtype::of<float>()))
         std::cout << "The array has float precision." << std::endl;
+}
+
+template<typename Dtype>
+std::shared_ptr<BaseTensor<Dtype>> BaseTensor<Dtype>::realized_cached_data(
+                                      std::shared_ptr<BaseTensor<Dtype>> cdata) {
+    if(cached) return cdata;
+
+    std::vector<cached_data_type> cin;
+    for (int i=0; i<inputs.size(); ++i)
+        cin.emplace_back(inputs[i]->realized_cached_data(inputs[i]));
+
+    return op->compute(cin);
 }
 
 #endif

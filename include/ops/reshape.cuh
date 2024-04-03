@@ -25,23 +25,14 @@ public:
         return cached_data;
     }
 
-    virtual std::vector<std::shared_ptr<Tensor<Dtype>>> gradient(
-                            std::shared_ptr<Tensor<Dtype>> out_grad, 
-                            Tensor<Dtype>* tensor) override {
+    virtual std::vector<cached_data_type> gradient(
+                            cached_data_type out_grad, 
+                            cached_data_type tensor) override {
 
-        auto inputs = tensor->get_inputs();
-        auto out = std::make_shared<Tensor<Dtype>>(out_grad->device());
+        cached_data_type out = out_grad->deep_cpy_cached_data();
+        out->set_shape(tensor->inputs[0]->shape());
 
-        cached_data_type cached_data = out_grad->deep_cpy_cached_data();
-        cached_data->set_shape(inputs[0]->shape());
-        out->reset_cached_data(cached_data);
         return {out};
-    }
-
-    virtual Tensor<Dtype> operator()(const std::shared_ptr< GenericOp<Dtype> > op,
-                                 std::vector<Tensor<Dtype>*>& inputs) const override {
-
-        return Tensor<Dtype>::make_from_op(op, inputs);
     }
 
 private:

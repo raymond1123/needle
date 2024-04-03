@@ -8,21 +8,29 @@ template<typename Dtype> class BaseTensor;
 
 template<typename Dtype>
 class GenericOp {
-//protected:
-//    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+public:
+    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
 public:
     GenericOp(OpType op_type):_op_type(op_type) {};
 
-    virtual std::shared_ptr<BaseTensor<Dtype>> compute(
-                std::vector<std::shared_ptr<BaseTensor<Dtype>>> inputs)=0;
+    virtual cached_data_type compute(std::vector<cached_data_type> inputs)=0;
 
-    virtual std::vector<std::shared_ptr<Tensor<Dtype>>> gradient(
-                            std::shared_ptr<Tensor<Dtype>> out_grad, 
-                            Tensor<Dtype>* tensor)=0;
+    virtual std::vector<cached_data_type> gradient(
+                            cached_data_type out_grad, 
+                            cached_data_type tensor)=0;
 
-    virtual Tensor<Dtype> operator()(const std::shared_ptr<GenericOp<Dtype>> op,
-                                   std::vector<Tensor<Dtype>*>& inputs) const=0;
+    inline Tensor<Dtype> operator()(const std::shared_ptr<GenericOp<Dtype>> op,
+                                    std::vector<cached_data_type>& inputs,
+                                    BackendType backend) const {
+        return Tensor<Dtype>::make_from_op(op, inputs, backend);
+    }
+
+    inline cached_data_type operator()(const std::shared_ptr<GenericOp<Dtype>> op,
+                                    std::vector<cached_data_type>& inputs,
+                                    BackendType backend, bool op_on_self) const {
+        return Tensor<Dtype>::make_from_op_on_self(op, inputs, backend, op_on_self);
+    }
 
     inline int op_type() {return static_cast<int>(_op_type);}
 

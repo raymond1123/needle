@@ -11,7 +11,10 @@ template<typename Dtype> class BaseTensor;
 template<typename Dtype>
 class CudaTensor: public BaseTensor<Dtype> {
 public:
+    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
     explicit CudaTensor(py::array_t<Dtype>& np_array);
+    CudaTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
+               std::vector<cached_data_type> inputs): BaseTensor<Dtype>(op, inputs) {}
     explicit CudaTensor(const std::vector<size_t>& shape);
     ~CudaTensor() {}
 

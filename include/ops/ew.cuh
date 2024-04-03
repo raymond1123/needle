@@ -216,7 +216,6 @@ public:
 
         if(_grad_add) {
             cached_data = inputs[0];
-
         } else {
             cached_data = __create_cached_data(inputs[0]->shape(),
                                                inputs[0]->device());
@@ -241,9 +240,8 @@ public:
         return cached_data;
     }
 
-    virtual std::vector<std::shared_ptr<Tensor<Dtype>>> gradient(
-                            std::shared_ptr<Tensor<Dtype>> out_grad, 
-                            Tensor<Dtype>* tensor) override {
+    virtual std::vector<cached_data_type> gradient(cached_data_type out_grad, 
+                                                   cached_data_type tensor) override {
         if(_num_blocks==0) {
             cudaError_t err = this->_get_num_blocks();
         }
@@ -254,119 +252,93 @@ public:
             return {out_grad};
         } else if(this->_op_type == OpType::EWMinusTensor) {
             auto out1 = out_grad;
-            auto out2 = std::make_shared<Tensor<Dtype>>(out_grad->device());
-            auto cached_data = __create_cached_data(out_grad->shape(),
+            auto out2 = __create_cached_data(out_grad->shape(),
                                                     out_grad->device());
+
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
-                                                       cached_data->cached_ptr(), 
+                                                       out2->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
                                                        static_cast<Dtype>(-1));
-            out2->reset_cached_data(cached_data);
 
             return {out1, out2};
         } else if(this->_op_type == OpType::EWMinusScalar) {
             return {out_grad};
         } else if(this->_op_type == OpType::EWMulTensor) {
 
-            auto inputs = tensor->get_inputs();
+            auto inputs = tensor->inputs;
 
-            auto out1 = std::make_shared<Tensor<Dtype>>(out_grad->device());
-            auto out2 = std::make_shared<Tensor<Dtype>>(out_grad->device());
-
-            auto cached_data_1 = __create_cached_data(out_grad->shape(),
+            auto out1 = __create_cached_data(out_grad->shape(),
                                                        out_grad->device());
-            auto cached_data_2 = __create_cached_data(out_grad->shape(),
+            auto out2 = __create_cached_data(out_grad->shape(),
                                                        out_grad->device());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulTensor, _n,
-                                                       cached_data_1->cached_ptr(), 
+                                                       out1->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
                                                        inputs[1]->cached_ptr());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulTensor, _n,
-                                                       cached_data_2->cached_ptr(), 
+                                                       out2->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
                                                        inputs[0]->cached_ptr());
-
-            out1->reset_cached_data(cached_data_1);
-            out2->reset_cached_data(cached_data_2);
 
             return {out1, out2};
 
         } else if(this->_op_type == OpType::EWMulScalar) {
-            auto out = std::make_shared<Tensor<Dtype>>(out_grad->device());
-            auto cached_data = __create_cached_data(out_grad->shape(),
+            auto out = __create_cached_data(out_grad->shape(),
                                                        out_grad->device());
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
-                                                       cached_data->cached_ptr(), 
+                                                       out->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
                                                        _scalar);
-            out->reset_cached_data(cached_data);
 
             return {out};
 
         } else if(this->_op_type == OpType::EWDivTensor) {
-            auto inputs = tensor->get_inputs();
+            auto inputs = tensor->inputs;
 
-            auto out1 = std::make_shared<Tensor<Dtype>>(out_grad->device());
-            auto out2 = std::make_shared<Tensor<Dtype>>(out_grad->device());
-
-            auto cached_data_1 = __create_cached_data(out_grad->shape(),
+            auto out1 = __create_cached_data(out_grad->shape(),
                                                        out_grad->device());
-            auto cached_data_2 = __create_cached_data(out_grad->shape(),
+            auto out2 = __create_cached_data(out_grad->shape(),
                                                        out_grad->device());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWPowScalar, _n,
-                                                       cached_data_1->cached_ptr(), 
+                                                       out1->cached_ptr(), 
                                                        inputs[1]->cached_ptr(),
                                                        static_cast<Dtype>(-1));
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulTensor, _n,
-                                                       cached_data_1->cached_ptr(), 
+                                                       out1->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
-                                                       cached_data_1->cached_ptr());
+                                                       out1->cached_ptr());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWPowScalar, _n,
-                                                       cached_data_2->cached_ptr(), 
+                                                       out2->cached_ptr(), 
                                                        inputs[1]->cached_ptr(),
                                                        static_cast<Dtype>(-2));
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulTensor, _n,
-                                                       cached_data_2->cached_ptr(), 
+                                                       out2->cached_ptr(), 
                                                        inputs[0]->cached_ptr(), 
-                                                       cached_data_2->cached_ptr());
+                                                       out2->cached_ptr());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulTensor, _n,
-                                                       cached_data_2->cached_ptr(), 
+                                                       out2->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
-                                                       cached_data_2->cached_ptr());
-
-
-            out1->reset_cached_data(cached_data_1);
-            out2->reset_cached_data(cached_data_2);
-
+                                                       out2->cached_ptr());
             return {out1, out2};
 
         } else if(this->_op_type == OpType::EWDivScalar) {
-            auto out = std::make_shared<Tensor<Dtype>>(out_grad->device());
-            auto cached_data = __create_cached_data(out_grad->shape(),
+            auto out = __create_cached_data(out_grad->shape(),
                                                        out_grad->device());
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
-                                                       cached_data->cached_ptr(), 
+                                                       out->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
                                                        static_cast<Dtype>(1/_scalar));
-            out->reset_cached_data(cached_data);
-
             return {out};
         }
 
         return {};
-    }
-
-    virtual Tensor<Dtype> operator()(const std::shared_ptr< GenericOp<Dtype> > add_op,
-                                 std::vector<Tensor<Dtype>*>& inputs) const override {
-
-        return Tensor<Dtype>::make_from_op(add_op, inputs);
     }
 
 protected:
