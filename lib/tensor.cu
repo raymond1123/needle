@@ -13,6 +13,14 @@ Tensor<Dtype> zeros(std::vector<size_t> shape, BackendType backend) {
 }
 
 template<typename Dtype>
+void bind_operator_iplus_tensor(py::class_<Tensor<Dtype>>& tensor_class) {
+    tensor_class.def("__iadd__",
+        [](Tensor<Dtype>& self, Tensor<Dtype>& other) {
+            return self + other;
+        });
+}
+
+template<typename Dtype>
 void bind_operator_plus_tensor(py::class_<Tensor<Dtype>>& tensor_class) {
     tensor_class.def("__add__",
         [](Tensor<Dtype>& self, Tensor<Dtype>& other) {
@@ -139,6 +147,8 @@ void bind_tensor(py::module &m, const char *name) {
 
     bind_operator_pow_tensor(tensor_class);
     bind_operator_pow_scalar(tensor_class);
+
+    bind_operator_iplus_tensor(tensor_class);
 }
 
 PYBIND11_MODULE(tensor, m) {

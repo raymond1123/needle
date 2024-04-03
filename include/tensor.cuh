@@ -69,7 +69,7 @@ public:
     // element-wise addition
     Tensor operator+(Tensor& other);
     Tensor operator+(const Dtype scalar);
-    Tensor& operator+=(const Tensor& other);
+    //Tensor operator+=(const Tensor& other);
     Tensor operator-(Tensor& other);
     Tensor operator-(const Dtype scalar);
     Tensor operator*(Tensor& other);
@@ -290,24 +290,28 @@ std::shared_ptr<BaseTensor<Dtype>> Tensor<Dtype>::deep_cpy_cached_data() {
 }
 
 // this = this + other
-template<typename Dtype>
-Tensor<Dtype>& Tensor<Dtype>::operator+=(const Tensor<Dtype>& other) {
-    //check same beakend 
-    assert(other.__backend == __backend && 
-           "backend of operators must be the same");
-
-    std::shared_ptr<EWOp<Dtype>> op =
-                 std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
-                                               OpType::EWAddTensor);
-
-    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
-    std::vector<cached_data_type> cin = {__cached_data, other.__cached_data};
-
-    __cached_data = op->compute(cin);
-    printf("ooooooooooooooooperators+=\n");
-
-    return *this;
-}
+//template<typename Dtype>
+//Tensor<Dtype> Tensor<Dtype>::operator+=(const Tensor<Dtype>& other) {
+//    //check same beakend 
+//    assert(other.__backend == __backend && 
+//           "backend of operators must be the same");
+//
+//    /*
+//    std::shared_ptr<EWOp<Dtype>> op =
+//                 std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
+//                                               OpType::EWAddTensor);
+//
+//    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+//    std::vector<cached_data_type> cin = {__cached_data, other.__cached_data};
+//
+//    __cached_data = op->compute(cin);
+//
+//    return *this;
+//    */
+//    printf("ooooooooooooooooperators+=\n");
+//
+//    return (*this)+other;
+//}
 
 // return = this + other
 template<typename Dtype>
@@ -615,6 +619,8 @@ void Tensor<Dtype>::__compute_gradient(Tensor<Dtype>* out_tensor,
 template<typename Dtype>
 std::shared_ptr<Tensor<Dtype>> Tensor<Dtype>::__sum_grad(std::vector<std::shared_ptr<Tensor<Dtype>>>& input_grads) {
     assert(input_grads.size() > 0 && "at least one input gradients");
+
+    // create grad Tensor
     std::shared_ptr<Tensor<Dtype>> grad = std::make_shared<Tensor<Dtype>>(__backend);
     if (__backend == BackendType::CPU) {
         grad->__cached_data = 
@@ -627,7 +633,14 @@ std::shared_ptr<Tensor<Dtype>> Tensor<Dtype>::__sum_grad(std::vector<std::shared
     grad->__cached_data->zeros();
 
     for(auto &in_grad: input_grads) {
-        (*grad) += (*in_grad);
+        //(*grad) += (*in_grad);
+        std::shared_ptr<EWOp<Dtype>> op =
+                 std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
+                                               OpType::EWAddTensor, 0, true);
+        using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+        std::vector<cached_data_type> cin = {grad->__cached_data, in_grad->__cached_data};
+
+        op->compute(cin);
     }
 
     return grad;

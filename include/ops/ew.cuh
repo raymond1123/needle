@@ -200,9 +200,9 @@ protected:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
 public:
-    EWOp(size_t n, OpType op_type, Dtype scalar=0):
-        GenericOp<Dtype>(op_type),
-        _n(n), _scalar(scalar), _num_blocks(0) {}
+    EWOp(size_t n, OpType op_type, Dtype scalar=0, bool grad_add=false):
+        GenericOp<Dtype>(op_type), _n(n), 
+        _scalar(scalar), _num_blocks(0), _grad_add(grad_add) {}
 
     virtual cached_data_type compute(
                 std::vector<cached_data_type> inputs) override {
@@ -212,9 +212,15 @@ public:
 
         cudaError_t err = this->_get_num_blocks();
         assert(err==cudaSuccess && "get_num_blocks in EWOp failed");
+        cached_data_type cached_data = nullptr;
 
-        cached_data_type cached_data = __create_cached_data(inputs[0]->shape(),
-                                                            inputs[0]->device());
+        if(_grad_add) {
+            cached_data = inputs[0];
+
+        } else {
+            cached_data = __create_cached_data(inputs[0]->shape(),
+                                               inputs[0]->device());
+        }
 
         // TODO use function<> here, not if else in kernel function
         if (num_inputs==2) {
@@ -401,6 +407,7 @@ private:
     size_t _n;
     int _num_blocks;
     Dtype _scalar;
+    bool _grad_add;
 };
 
 #endif
