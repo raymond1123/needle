@@ -73,8 +73,8 @@ public:
 
     Tensor& operator+=(const Tensor& other);
 
-
     Tensor reshape(std::vector<size_t> new_shape);
+    //Tensor summation(std::vector<size_t> axes);
     //Tensor broadcast_to();
 
     /* backward */
@@ -483,6 +483,25 @@ Tensor<Dtype> Tensor<Dtype>::reshape(std::vector<size_t> new_shape) {
 
     return (*op)(op, inputs, __backend);
 }
+
+/*
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::summation(std::vector<size_t> axes) {
+    size_t new_size = 1;
+    for (auto &s: new_shape)
+        new_size *= s;
+    assert(new_size==__cached_data->size() && "reshape input new_shape is not legal");
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<ReshapeOp<Dtype>>(new_shape, OpType::Reshape);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+*/
 
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::operator[](std::vector<size_t> indices) {

@@ -2,6 +2,7 @@
 #define __CUDA_TENSOR_HPP__
 
 #include "backend/base_tensor.hpp"
+#include "backend/base_array.hpp"
 #include "backend/cuda_backend.cuh"
 
 namespace py = pybind11;
@@ -15,7 +16,8 @@ public:
     explicit CudaTensor(py::array_t<Dtype>& np_array);
     CudaTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
                std::vector<cached_data_type> inputs): BaseTensor<Dtype>(op, inputs) {}
-    explicit CudaTensor(const std::vector<size_t>& shape);
+    explicit CudaTensor(const std::vector<size_t>& shape, 
+                        bool create_cache=true);
     ~CudaTensor() {}
 
     CudaTensor(const CudaTensor&)=delete;
@@ -25,55 +27,57 @@ public:
     virtual void zeros() override;
     virtual void ones() override;
 
-    inline virtual size_t size() override {return this->__array->size();}
-    virtual inline Dtype* cached_ptr() override {
-        return this->__array->get_ptr();
-    }
-
+    inline virtual size_t size() override {return this->array->size();}
     virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const override;
     virtual inline BackendType device() override {return BackendType::CUDA;}
 
 protected:
     virtual void _from_numpy(py::array_t<Dtype> &a) override;
 
+/*
 private:
-    std::shared_ptr<CudaArray<Dtype>> __array;
+    std::shared_ptr<CudaArray<Dtype>> array;
+*/
 };
 
 template<typename Dtype>
 CudaTensor<Dtype>::CudaTensor(py::array_t<Dtype>& np_array):
     BaseTensor<Dtype>(np_array) {
     size_t size = this->_prod(this->__shape);
-    this->__array.reset(new CudaArray<Dtype>(size));
+    this->array.reset(new CudaArray<Dtype>(size));
     std::cout << "selected cuda backend" << std::endl;
     _from_numpy(np_array);
 }
 
 template<typename Dtype>
-CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape):
+CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape, 
+                              bool create_cache):
     BaseTensor<Dtype>(shape) {
     size_t size = this->_prod(this->__shape);
-    this->__array.reset(new CudaArray<Dtype>(size));
+    if(create_cache)
+        this->array.reset(new CudaArray<Dtype>(size));
+
     std::cout << "selected cuda backend" << std::endl;
 }
 
 template<typename Dtype>
 void CudaTensor<Dtype>::zeros() {
-    this->__array->fill_val(static_cast<Dtype>(0));
+    this->array->fill_val(static_cast<Dtype>(0));
 }
 
 template<typename Dtype>
 void CudaTensor<Dtype>::ones() {
-    this->__array->fill_val(static_cast<Dtype>(1));
+    this->array->fill_val(static_cast<Dtype>(1));
 }
 
 template<typename Dtype>
 void CudaTensor<Dtype>::_from_numpy(py::array_t<Dtype> &a) {
-    cudaError_t err = this->__array->host2device(
-            reinterpret_cast<const Dtype*>(a.data())
-    );
+    //cudaError_t err = this->array->host2device(
+    const Dtype* ptr = reinterpret_cast<const Dtype*>(a.data());
+    this->array->mem_cpy(const_cast<Dtype*>(ptr),
+                         MemCpyType::Host2Dev);
 
-    if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+    //if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
 }
 
 template<typename Dtype>
@@ -86,11 +90,12 @@ py::array_t<Dtype> CudaTensor<Dtype>::to_numpy() {
                    [](size_t& c) { return c * sizeof(Dtype); });
 
     // copy memory to host
-    Dtype* host_ptr = (Dtype*)std::malloc(this->__array->size() * sizeof(Dtype));
+    Dtype* host_ptr = (Dtype*)std::malloc(this->array->size() * sizeof(Dtype));
     if (host_ptr == 0) throw std::bad_alloc();
 
-    cudaError_t err = this->__array->device2host(host_ptr);
-    if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
+    //cudaError_t err = this->array->device2host(host_ptr);
+    this->array->mem_cpy(host_ptr, MemCpyType::Dev2Host);
+    //if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
 
     // return numpy array
     py::capsule deallocate_buffer(host_ptr, [](void* p) { free(p); });
@@ -104,7 +109,7 @@ std::shared_ptr<BaseTensor<Dtype>> CudaTensor<Dtype>::deep_cpy_cached_data() con
     std::shared_ptr<BaseTensor<Dtype>> cached_data = 
         std::make_shared<CudaTensor<Dtype>>(this->__shape);
 
-    __array->device2device(cached_data->cached_ptr());
+    this->array->mem_cpy(cached_data->cached_ptr(), MemCpyType::Dev2Dev);
 
     return cached_data;
 }

@@ -19,9 +19,17 @@ public:
 
         assert(inputs.size() == 1 && "number of reshape input must be 1");
 
-        cached_data_type cached_data = inputs[0]->deep_cpy_cached_data();
+        cached_data_type cached_data = __create_cached_data(inputs[0]->shape(), 
+                                                            inputs[0]->device(),
+                                                            false);
+        cached_data->array = inputs[0]->array;
+
+        /* without deep cpy data, reuse cached data in inputs[0] */
+        cached_data->set_cached_ptr(inputs[0]->cached_ptr()); 
         cached_data->set_shape(_new_shape);
 
+        printf("cached_data->cached_ptr()=%p, inputs[0]->cached_ptr()=%p\n", 
+               cached_data->cached_ptr(), inputs[0]->cached_ptr());
         return cached_data;
     }
 
@@ -37,12 +45,13 @@ public:
 
 private:
     inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
-                                                 BackendType device) {
+                                                 BackendType device,
+                                                 bool create_cache) {
         cached_data_type cached_data = nullptr;
         if (device == BackendType::CPU) {
-            cached_data.reset(new CpuTensor<Dtype>(shape));
+            cached_data.reset(new CpuTensor<Dtype>(shape, create_cache));
         } else if (device == BackendType::CUDA) {
-            cached_data.reset(new CudaTensor<Dtype>(shape));
+            cached_data.reset(new CudaTensor<Dtype>(shape, create_cache));
         } else {
             throw std::runtime_error("Unsupported backend type.");
         }

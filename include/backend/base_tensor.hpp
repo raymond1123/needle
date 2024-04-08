@@ -2,10 +2,10 @@
 #define __BASE_TENSOR_HPP__
 
 #include "common.hpp"
+#include "backend/base_array.hpp"
 #include "ops/generic_op.cuh"
 
 namespace py = pybind11;
-
 
 template<typename Dtype>
 class BaseTensor {
@@ -25,7 +25,6 @@ public:
     virtual void zeros()=0;
     virtual void ones()=0;
     virtual BackendType device()=0;
-    virtual inline Dtype* cached_ptr()=0;
     virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const=0;
 
     inline std::vector<size_t> shape() {return __shape;}
@@ -34,6 +33,9 @@ public:
         __shape = new_shape;
         compact_strides();
     }
+
+    inline Dtype* cached_ptr() { return this->array->get_ptr();}
+    inline void set_cached_ptr(Dtype* ptr) { array->set_ptr(ptr); }
 
     /* input cdata is shared_ptr of itself*/
     cached_data_type realized_cached_data(cached_data_type cdata=nullptr);
@@ -47,6 +49,7 @@ protected:
     void _get_info_from_numpy(py::array_t<Dtype> &np_array);
 
 public:
+    std::shared_ptr<BaseArray<Dtype>> array;
     std::shared_ptr<GenericOp<Dtype>> op;
     std::vector<cached_data_type> inputs;
     std::shared_ptr<BaseTensor<Dtype>> grad;

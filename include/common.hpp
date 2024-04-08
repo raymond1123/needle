@@ -38,6 +38,14 @@ enum class BackendType: int {
     CUDA = 1
 };
 
+enum class MemCpyType: int {
+    Host2Host = 0,
+    Hosta2Hostb = 1,
+    Host2Dev = 2,
+    Dev2Host = 3,
+    Dev2Dev = 4
+};
+
 enum class OpType: int {
     EWAddTensor = 0,
     EWAddScalar = 1,
