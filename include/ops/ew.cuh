@@ -210,6 +210,12 @@ public:
         int num_inputs = inputs.size();
         assert((num_inputs==2 || num_inputs==1) && "input number of EWOp must be 1 or 2");
 
+        /* awkward... is there any better idea not compacting in here */
+        for(auto& input: inputs) {
+            if(!input->is_compact)
+                input->compact();
+        }
+
         cudaError_t err = this->_get_num_blocks();
         assert(err==cudaSuccess && "get_num_blocks in EWOp failed");
         cached_data_type cached_data = nullptr;
@@ -237,6 +243,9 @@ public:
         err = cudaPeekAtLastError();
         assert(err==cudaSuccess && "ApplyEW failed");
 
+        cached_data->cached = true;
+        cached_data->is_compact = true;
+
         return cached_data;
     }
 
@@ -253,7 +262,7 @@ public:
         } else if(this->_op_type == OpType::EWMinusTensor) {
             auto out1 = out_grad;
             auto out2 = __create_cached_data(out_grad->shape(),
-                                                    out_grad->device());
+                                             out_grad->device());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
                                                        out2->cached_ptr(), 
@@ -268,9 +277,9 @@ public:
             auto inputs = tensor->inputs;
 
             auto out1 = __create_cached_data(out_grad->shape(),
-                                                       out_grad->device());
+                                             out_grad->device());
             auto out2 = __create_cached_data(out_grad->shape(),
-                                                       out_grad->device());
+                                             out_grad->device());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulTensor, _n,
                                                        out1->cached_ptr(), 
@@ -286,7 +295,7 @@ public:
 
         } else if(this->_op_type == OpType::EWMulScalar) {
             auto out = __create_cached_data(out_grad->shape(),
-                                                       out_grad->device());
+                                            out_grad->device());
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
                                                        out->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
@@ -298,9 +307,9 @@ public:
             auto inputs = tensor->inputs;
 
             auto out1 = __create_cached_data(out_grad->shape(),
-                                                       out_grad->device());
+                                             out_grad->device());
             auto out2 = __create_cached_data(out_grad->shape(),
-                                                       out_grad->device());
+                                             out_grad->device());
 
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWPowScalar, _n,
                                                        out1->cached_ptr(), 
@@ -330,7 +339,7 @@ public:
 
         } else if(this->_op_type == OpType::EWDivScalar) {
             auto out = __create_cached_data(out_grad->shape(),
-                                                       out_grad->device());
+                                            out_grad->device());
             ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
                                                        out->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
@@ -362,12 +371,13 @@ private:
     }
 
     inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
-                                                 BackendType device) {
+                                                 BackendType device,
+                                                 bool create_cache=true) {
         cached_data_type cached_data = nullptr;
         if (device == BackendType::CPU) {
-            cached_data.reset(new CpuTensor<Dtype>(shape));
+            cached_data.reset(new CpuTensor<Dtype>(shape, create_cache));
         } else if (device == BackendType::CUDA) {
-            cached_data.reset(new CudaTensor<Dtype>(shape));
+            cached_data.reset(new CudaTensor<Dtype>(shape, create_cache));
         } else {
             throw std::runtime_error("Unsupported backend type.");
         }

@@ -36,26 +36,16 @@ public:
 
 protected:
     virtual inline cudaError_t _get_num_blocks()=0;
-
 public:
     OpType _op_type;
 };
+
 
 #endif
 
 
 ///* input two tensor; output one Tensor */
-//0.  template<Dtype> Tensor<Dtype> add(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
-//1.  template<Dtype> Tensor<Dtype> multiply(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
-//2.  template<Dtype> Tensor<Dtype> power(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
-//3.  template<Dtype> Tensor<Dtype> divide(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
 //4.  template<Dtype> Tensor<Dtype> matmul(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
-//
-///* input one tensor and a Dtype; output one Tensor */
-//5.  template<Dtype> Tensor<Dtype> add_scalar(const Tensor<Dtype>& a, const Dtype scalar);
-//6.  template<Dtype> Tensor<Dtype> mul_scalar(const Tensor<Dtype>& a, const Dtype scalar);
-//7.  template<Dtype> Tensor<Dtype> power_scalar(const Tensor<Dtype>& a, const Dtype scalar);
-//8.  template<Dtype> Tensor<Dtype> divide_scalar(const Tensor<Dtype>& a, const Dtype scalar);
 //
 ///* input one tensor; output one Tensor */
 //9.  template<Dtype> Tensor<Dtype> negate(const Tensor<Dtype>& a);
@@ -65,10 +55,9 @@ public:
 //13. template<Dtype> Tensor<Dtype> tanh(const Tensor<Dtype>& a);
 //
 ///* input one tensor and a vector; output one Tensor */
-//14. template<Dtype> Tensor<Dtype> reshape(const Tensor<Dtype>& a, const std::vector<int>& shape);
 //15. template<Dtype> Tensor<Dtype> broadcast_to(const Tensor<Dtype>& a, const std::vector<int>& shape);
-//16. template<Dtype> Tensor<Dtype> transpose(const Tensor<Dtype>& a, const std::vector<int>& axes);
 //17. template<Dtype> Tensor<Dtype> summation(const Tensor<Dtype>& a, const std::vector<int>& axes);
+//16. template<Dtype> Tensor<Dtype> transpose(const Tensor<Dtype>& a, const std::vector<int>& axes);
 //18. template<Dtype> Tensor<Dtype> flip(const Tensor<Dtype>&a, const std::vector<int>& axes);
 //
 ///* input one tensor and two vector; output one Tensor */

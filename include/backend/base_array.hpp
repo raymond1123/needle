@@ -6,6 +6,8 @@
 template<typename Dtype>
 class BaseArray {
 public:
+    using cached_array_type = std::shared_ptr<BaseArray<Dtype>>;
+
     BaseArray(const size_t size):__size(size), __ptr(nullptr) {};
     virtual ~BaseArray() {}
 
@@ -16,6 +18,10 @@ public:
     inline Dtype* get_ptr() {return __ptr;}
     inline void set_ptr(Dtype * ptr) {__ptr = ptr;}
 
+    virtual cached_array_type compact(size_t size, 
+                                      std::vector<size_t> shape,
+                                      std::vector<size_t> strides,
+                                      size_t offset)=0;
     virtual void mem_cpy(Dtype* ptr, 
                          MemCpyType mem_cpy_type)=0;
     virtual void fill_val(Dtype val)=0;

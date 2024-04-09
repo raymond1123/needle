@@ -37,6 +37,7 @@ public:
     inline std::vector<size_t> shape() { return __cached_data->shape(); }
     inline std::vector<size_t> strides() { return __cached_data->strides(); }
     inline BackendType device() {return __backend;}
+    virtual inline size_t size() {return __cached_data->size();};
 
     inline Dtype* cached_ptr() {return __cached_data->cached_ptr();}
 
@@ -74,12 +75,14 @@ public:
     Tensor& operator+=(const Tensor& other);
 
     Tensor reshape(std::vector<size_t> new_shape);
-    //Tensor summation(std::vector<size_t> axes);
-    //Tensor broadcast_to();
+    Tensor broadcast_to(std::vector<size_t> shape);
+    //Tensor summation(std::vector<int> axes);
 
     /* backward */
     void backward();
     //void backward(std::shared_ptr<Tensor> out_grad);
+
+    inline void contiguous() {__cached_data->compact();}
 
 private:
     void __print_tensor_info(std::string ctor_type);
@@ -484,16 +487,25 @@ Tensor<Dtype> Tensor<Dtype>::reshape(std::vector<size_t> new_shape) {
     return (*op)(op, inputs, __backend);
 }
 
-/*
 template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::summation(std::vector<size_t> axes) {
-    size_t new_size = 1;
-    for (auto &s: new_shape)
-        new_size *= s;
-    assert(new_size==__cached_data->size() && "reshape input new_shape is not legal");
+Tensor<Dtype> Tensor<Dtype>::broadcast_to(std::vector<size_t> shape) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<ReshapeOp<Dtype>>(new_shape, OpType::Reshape);
+        std::make_shared<BroadcastOp<Dtype>>(shape, OpType::BroadcastTo);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+/*
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::summation(std::vector<int> axes) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<SummationOp<Dtype>>(axes, OpType::Summation);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
@@ -507,22 +519,6 @@ template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::operator[](std::vector<size_t> indices) {
 
 }
-
-/*
-template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::broadcast_to() {
-    std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
-                                      OpType::BroadcastTo,
-                                      scalar);
-
-    std::vector<Tensor<Dtype>*> inputs;
-    inputs.push_back(this);
-    printf("===============+\n");
-
-    return (*op)(op, inputs);
-}
-*/
 
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::make_from_op(const std::shared_ptr<GenericOp<Dtype>> op,

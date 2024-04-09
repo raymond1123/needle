@@ -5,5 +5,6 @@
 #include "backend/cuda_tensor.hpp"
 #include "ops/ew.cuh"
 #include "ops/reshape.cuh"
+#include "ops/broadcast.cuh"
 
 #endif

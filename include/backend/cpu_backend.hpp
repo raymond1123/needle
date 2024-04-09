@@ -6,10 +6,14 @@
 #define ALIGNMENT 256
 namespace py = pybind11;
 
+enum compact_mode {COMPACT, EWITEM, SITEM};
+
 template<typename Dtype>
 class CpuArray: public BaseArray<Dtype> {
 public:
-    CpuArray(const size_t size);
+    using cached_array_type = std::shared_ptr<BaseArray<Dtype>>;
+
+    CpuArray(const size_t size, bool cached_data=true);
     ~CpuArray() {free(this->__ptr);}
 
     CpuArray(const CpuArray&)=delete;
@@ -18,33 +22,36 @@ public:
     void mem_cpy(Dtype* ptr,
                  MemCpyType mem_cpy_type) override;
 
-    /*
-    py::array_t<Dtype> to_np(std::vector<size_t> shape,
-               std::vector<size_t> strides,
-               size_t offset);
-    */
-
-    //inline size_t size() {return __size;}
-    //inline Dtype* get_ptr() {return __ptr;}
-
     virtual void fill_val(Dtype val) override;
+    virtual cached_array_type compact(size_t size, 
+                              std::vector<size_t> shape,
+                              std::vector<size_t> strides,
+                              size_t offset) override;
 
 private:
     void __deep_cpy(Dtype* other_ptr);
-/*
-private:
-    Dtype *__ptr;
-    size_t __size;
-*/
+    void __assign_value(compact_mode mode,
+                        const Dtype* a, 
+                        Dtype* out, 
+                        std::vector<size_t> &shape,
+                        std::vector<size_t> &strides, 
+                        size_t offset,
+                        std::vector<int> &indices,
+                        int depth,
+                        size_t &idx,
+                        Dtype val);
 };
 
 template<typename Dtype>
-CpuArray<Dtype>::CpuArray(const size_t size): BaseArray<Dtype>(size) {
+CpuArray<Dtype>::CpuArray(const size_t size, bool create_cache): 
+    BaseArray<Dtype>(size) {
 
-    int ret = posix_memalign(reinterpret_cast<void**>(&(this->__ptr)),
+    if(create_cache) {
+        int ret = posix_memalign(reinterpret_cast<void**>(&(this->__ptr)),
                              ALIGNMENT, this->__size*sizeof(Dtype));
 
-    if (ret != 0) throw std::bad_alloc();
+        if (ret != 0) throw std::bad_alloc();
+    }
 }
 
 template<typename Dtype>
@@ -61,15 +68,6 @@ void CpuArray<Dtype>::__deep_cpy(Dtype* other_ptr) {
         other_ptr[i] = this->__ptr[i];
 }
 
-/*
-template<typename Dtype>
-py::array_t<Dtype> CpuArray<Dtype>::to_np(std::vector<size_t> shape,
-                                   std::vector<size_t> strides,
-                                   size_t offset) {
-    return py::array_t<Dtype>(shape, strides, this->__ptr + offset);
-}
-*/
-
 template<typename Dtype>
 void CpuArray<Dtype>::fill_val(Dtype val) {
     if(val==static_cast<Dtype>(0)) {
@@ -78,6 +76,63 @@ void CpuArray<Dtype>::fill_val(Dtype val) {
         for(size_t i=0; i<this->__size; ++i)
             this->__ptr[i] = val;
     }
+}
+
+/* this is actually a DFS recursive */
+template<typename Dtype>
+void CpuArray<Dtype>::__assign_value(compact_mode mode,
+                                    const Dtype* a, 
+                                    Dtype* out, 
+                                    std::vector<size_t> &shape,
+                                    std::vector<size_t> &strides, 
+                                    size_t offset,
+                                    std::vector<int> &indices,
+                                    int depth,
+                                    size_t &idx,
+                                    Dtype val) {
+
+    // Base case: reached the innermost loop 
+    // leaf node in recursive tree
+    if (depth == shape.size()) {
+        size_t in_idx = 0;
+        for(int i=0; i<shape.size(); ++i) {
+            in_idx += strides[i]*indices[i];
+        }
+
+        if(mode == COMPACT) 
+            out[idx++] = a[in_idx+offset];
+        if(mode == EWITEM) 
+            out[in_idx+offset] = a[idx++];
+        if(mode == SITEM) 
+            out[in_idx+offset] = val;
+
+        return;
+
+    } else { // Recursive case: iterate over the current dimension
+        for(int i=0; i<shape[depth]; ++i) {
+            indices[depth] = i;
+            __assign_value(mode, a, out, shape, strides, offset, 
+                      indices, depth+1, idx, val);
+        }
+    }
+}
+
+template<typename Dtype>
+std::shared_ptr<BaseArray<Dtype>> CpuArray<Dtype>::compact(size_t size, 
+                                           std::vector<size_t> shape,
+                                           std::vector<size_t> strides,
+                                           size_t offset) {
+    cached_array_type array = std::make_shared<CpuArray<Dtype>>(size);
+
+    std::vector<int> indices(shape.size(), 0);  
+    size_t in_idx = 0;
+    __assign_value(COMPACT, 
+                   this->__ptr, 
+                   array->get_ptr(), 
+                   shape, strides, offset,
+                   indices, 0, in_idx, -1);
+
+    return array;
 }
 
 #endif

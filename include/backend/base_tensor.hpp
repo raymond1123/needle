@@ -11,12 +11,14 @@ template<typename Dtype>
 class BaseTensor {
 public:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+    using cached_array_type = std::shared_ptr<BaseArray<Dtype>>;
+
     BaseTensor(const std::vector<size_t>& shape);
     BaseTensor(py::array_t<Dtype>& np_array);
 
     BaseTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
                std::vector<cached_data_type> inputs): 
-        op(op), inputs(inputs), cached(false) {}
+        op(op), inputs(inputs), cached(false), is_compact(true) {}
 
     virtual ~BaseTensor()=default;
 
@@ -34,6 +36,10 @@ public:
         compact_strides();
     }
 
+    void set_strides(std::vector<size_t> new_strides) {
+        __strides = new_strides;
+    }
+
     inline Dtype* cached_ptr() { return this->array->get_ptr();}
     inline void set_cached_ptr(Dtype* ptr) { array->set_ptr(ptr); }
 
@@ -41,6 +47,7 @@ public:
     cached_data_type realized_cached_data(cached_data_type cdata=nullptr);
 
     void compact_strides();
+    void compact();
 
 protected:
     virtual void _from_numpy(py::array_t<Dtype> &np_array)=0;
@@ -49,11 +56,13 @@ protected:
     void _get_info_from_numpy(py::array_t<Dtype> &np_array);
 
 public:
-    std::shared_ptr<BaseArray<Dtype>> array;
+    //std::shared_ptr<BaseArray<Dtype>> array;
+    cached_array_type array;
     std::shared_ptr<GenericOp<Dtype>> op;
     std::vector<cached_data_type> inputs;
-    std::shared_ptr<BaseTensor<Dtype>> grad;
+    cached_data_type grad;
     bool cached;
+    bool is_compact;
     int tensor_idx;
 
 protected:
@@ -65,13 +74,14 @@ protected:
 
 template<typename Dtype>
 BaseTensor<Dtype>::BaseTensor(const std::vector<size_t>& shape):
-    __shape(shape), __strides(shape), __offset(0), cached(false) {
+    __shape(shape), __strides(shape), __offset(0), 
+    cached(false), is_compact(true) {
     compact_strides();
 }
 
 template<typename Dtype>
 BaseTensor<Dtype>::BaseTensor(py::array_t<Dtype>& np_array): 
-    __offset(0), cached(false) {
+    __offset(0), cached(false), is_compact(true) {
     _get_info_from_numpy(np_array);
 }
 
@@ -125,6 +135,19 @@ std::shared_ptr<BaseTensor<Dtype>> BaseTensor<Dtype>::realized_cached_data(
         cin.emplace_back(inputs[i]->realized_cached_data(inputs[i]));
 
     return op->compute(cin);
+}
+
+template<typename Dtype>
+void BaseTensor<Dtype>::compact() {
+    if(is_compact) return;
+
+    size_t out_size = _prod(__shape);
+    auto new_array = array->compact(out_size, __shape, __strides, __offset);
+    //array.reset(new_array.get());
+    array = new_array;
+
+    compact_strides();
+    is_compact = true;
 }
 
 #endif

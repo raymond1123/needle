@@ -45,7 +45,7 @@ CudaTensor<Dtype>::CudaTensor(py::array_t<Dtype>& np_array):
     BaseTensor<Dtype>(np_array) {
     size_t size = this->_prod(this->__shape);
     this->array.reset(new CudaArray<Dtype>(size));
-    std::cout << "selected cuda backend" << std::endl;
+    std::cout << "selected cuda backend 1" << std::endl;
     _from_numpy(np_array);
 }
 
@@ -54,10 +54,10 @@ CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape,
                               bool create_cache):
     BaseTensor<Dtype>(shape) {
     size_t size = this->_prod(this->__shape);
-    if(create_cache)
-        this->array.reset(new CudaArray<Dtype>(size));
+    printf("sssssssssssss: %lu\n", size);
+    this->array.reset(new CudaArray<Dtype>(size, create_cache));
 
-    std::cout << "selected cuda backend" << std::endl;
+    std::cout << "selected cuda backend 2" << std::endl;
 }
 
 template<typename Dtype>

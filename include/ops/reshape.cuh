@@ -19,17 +19,28 @@ public:
 
         assert(inputs.size() == 1 && "number of reshape input must be 1");
 
-        cached_data_type cached_data = __create_cached_data(inputs[0]->shape(), 
-                                                            inputs[0]->device(),
-                                                            false);
+        /* awkward... is there any better idea not compacting in here */
+        for(auto& input: inputs) {
+            if(!input->is_compact)
+                input->compact();
+        }
+
+        cached_data_type cached_data = __create_cached_data(_new_shape,
+                                                            inputs[0]->device(), false);
         cached_data->array = inputs[0]->array;
 
-        /* without deep cpy data, reuse cached data in inputs[0] */
+        /* this is actually dangerous! shared_ptr share the same raw pointer here,
+           because reshape does not need to compact, 
+           so we can share the raw pointer here,
+           without deep cpy data, reuse cached data in inputs[0] 
+         */
         cached_data->set_cached_ptr(inputs[0]->cached_ptr()); 
-        cached_data->set_shape(_new_shape);
 
-        printf("cached_data->cached_ptr()=%p, inputs[0]->cached_ptr()=%p\n", 
+        printf("reshape: cached_data->cached_ptr()=%p, inputs[0]->cached_ptr()=%p\n", 
                cached_data->cached_ptr(), inputs[0]->cached_ptr());
+
+        cached_data->cached = true;
+        cached_data->is_compact = true;
         return cached_data;
     }
 
@@ -46,7 +57,7 @@ public:
 private:
     inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
                                                  BackendType device,
-                                                 bool create_cache) {
+                                                 bool create_cache=true) {
         cached_data_type cached_data = nullptr;
         if (device == BackendType::CPU) {
             cached_data.reset(new CpuTensor<Dtype>(shape, create_cache));
@@ -66,7 +77,6 @@ protected:
 
 private:
     std::vector<size_t> _new_shape;
-    int _num_blocks;
 };
 
 #endif

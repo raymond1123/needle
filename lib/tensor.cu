@@ -123,10 +123,13 @@ void bind_tensor(py::module &m, const char *name) {
             py::arg("backend"))
 
         .def("reshape", &Tensor<Dtype>::reshape)
+        .def("broadcast_to", &Tensor<Dtype>::broadcast_to)
         .def("to_numpy", &Tensor<Dtype>::to_numpy)
         .def("device", &Tensor<Dtype>::device)
         .def("shape", &Tensor<Dtype>::shape)
+        .def("size", &Tensor<Dtype>::size)
         .def("strides", &Tensor<Dtype>::strides)
+        .def("contiguous", &Tensor<Dtype>::contiguous)
         .def("backward", &Tensor<Dtype>::backward)
         .def("grad", &Tensor<Dtype>::grad)
         ;
