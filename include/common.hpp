@@ -66,13 +66,14 @@ enum class OpType: int {
     Reshape = 16,
     BroadcastTo = 17,
     Transpose = 18,
-    Summation = 19,
-    Flip = 20,
-    Dilate = 21,
-    Undilate = 22,
-    Stack = 23,
-    Split = 24,
-    Conv = 25
+    Permute = 19,
+    Summation = 20,
+    Flip = 21,
+    Dilate = 22,
+    Undilate = 23,
+    Stack = 24,
+    Split = 25,
+    Conv = 26
 };
 
 enum class DataType: int{

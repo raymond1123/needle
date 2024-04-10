@@ -64,7 +64,6 @@ __global__ void CompactKernel(const Dtype* a, Dtype* out,
     out[gid] = a[in_idx];
 }
 
-
 template<typename Dtype>
 __global__ void FillKernel(Dtype* out, Dtype val, size_t size) {
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -169,17 +168,17 @@ std::shared_ptr<BaseArray<Dtype>> CudaArray<Dtype>::compact(size_t size,
                                             std::vector<size_t> strides,
                                             size_t offset) {
 
-    cached_array_type array = std::make_shared<CudaArray<Dtype>>(size);
+    cached_array_type new_array = std::make_shared<CudaArray<Dtype>>(size);
 
     CudaDims dim = CudaOneDim(size);
     CompactKernel<Dtype><<<dim.grid, dim.block>>>(this->__ptr,
-                                                  array->get_ptr(),
+                                                  new_array->get_ptr(),
                                                   size,
                                                   VecToCuda(shape),
                                                   VecToCuda(strides), 
                                                   offset);
-    this->__size = size;
-    return array;
+    //this->__size = size;
+    return new_array;
 }
 
 #endif

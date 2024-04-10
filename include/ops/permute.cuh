@@ -1,5 +1,5 @@
-#ifndef __RESHAPE_OP__
-#define __RESHAPE_OP__
+#ifndef __PERMUTE_OP__
+#define __PERMUTE_OP__
 
 #include "ops/generic_op.cuh"
 
@@ -7,33 +7,29 @@ template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;
 
 template<typename Dtype>
-class ReshapeOp: public GenericOp<Dtype> {
+class PermuteOp: public GenericOp<Dtype> {
 protected:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
 public:
-    ReshapeOp(std::vector<size_t> new_shape, OpType op_type):
-        GenericOp<Dtype>(op_type), _new_shape(new_shape) {}
+    PermuteOp(std::vector<int> axes, OpType op_type):
+        GenericOp<Dtype>(op_type), _axes(axes) {}
 
     virtual cached_data_type compute(std::vector<cached_data_type> inputs) override {
 
         assert(inputs.size() == 1 && "number of reshape input must be 1");
+        assert(inputs[0]->shape().size() == _axes.size() &&
+               "number of reshape input must be 1");
 
-        /* awkward... is there any better idea not compacting in here */
-        for(auto& input: inputs) {
-            if(!input->is_compact)
-                input->compact();
-        }
-
+        __prepare_pos_axes(inputs[0]->shape(), inputs[0]->strides());
         cached_data_type cached_data = __create_cached_data(_new_shape,
                                                             inputs[0]->device(), false);
         /* without deep cpy data, reuse cached data in inputs[0] */
         cached_data->array = inputs[0]->array;
-        printf("reshape: cached_data->cached_ptr()=%p, inputs[0]->cached_ptr()=%p\n", 
-               cached_data->cached_ptr(), inputs[0]->cached_ptr());
+        cached_data->set_strides(_new_strides);
 
         cached_data->cached = true;
-        cached_data->is_compact = true;
+        cached_data->is_compact = false;
         return cached_data;
     }
 
@@ -48,6 +44,23 @@ public:
     }
 
 private:
+    inline void __prepare_pos_axes(std::vector<size_t> shape,
+                                   std::vector<size_t> strides) {
+        int length_shape = shape.size();
+        _new_strides = strides;
+        _new_shape = shape;
+
+        auto pos_axes = _axes;
+
+        for(int i=0; i<_axes.size(); ++i)
+            if(_axes[i]<0) pos_axes[i] = length_shape+_axes[i];
+
+        for(int i=0; i<length_shape; ++i) {
+            _new_strides[i] = strides[pos_axes[i]];
+            _new_shape[i] = shape[pos_axes[i]];
+        }
+    }
+
     inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
                                                  BackendType device,
                                                  bool create_cache=true) {
@@ -69,7 +82,9 @@ protected:
     }
 
 private:
+    std::vector<int> _axes;
     std::vector<size_t> _new_shape;
+    std::vector<size_t> _new_strides;
 };
 
 #endif

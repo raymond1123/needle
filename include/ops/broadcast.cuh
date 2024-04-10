@@ -20,23 +20,13 @@ public:
 
         assert(inputs.size() == 1 && "number of broadcast input must be 1");
 
-        /* too bad, I have no idea about this...
-           seems no way to share the same raw pointer of cached data 
-           has to create new memory, 
-           or during compact the shared raw pointer will be destroyed which is a bug...
-         */
-        //cached_data_type cached_data = __create_cached_data(_new_shape,
-        //                                                    inputs[0]->device(), 
-        //                                                    false);
-        //cached_data->array = inputs[0]->array;
-        //cached_data_type cached_data(inputs[0]);
+        cached_data_type cached_data = __create_cached_data(_new_shape,
+                                                            inputs[0]->device(), 
+                                                            false);
         /* without deep cpy data, reuse cached data in inputs[0] */
-        //cached_data->set_cached_ptr(inputs[0]->cached_ptr()); 
-
-        cached_data_type cached_data = inputs[0]->deep_cpy_cached_data();
+        cached_data->array = inputs[0]->array;
 
         __transfer_broadcast_shape(inputs[0]);
-        cached_data->set_shape(_new_shape);
         cached_data->set_strides(_new_strides);
 
         cached_data->cached = true;

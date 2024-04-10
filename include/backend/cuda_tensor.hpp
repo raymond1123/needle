@@ -54,7 +54,6 @@ CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape,
                               bool create_cache):
     BaseTensor<Dtype>(shape) {
     size_t size = this->_prod(this->__shape);
-    printf("sssssssssssss: %lu\n", size);
     this->array.reset(new CudaArray<Dtype>(size, create_cache));
 
     std::cout << "selected cuda backend 2" << std::endl;

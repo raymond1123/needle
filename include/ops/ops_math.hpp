@@ -6,5 +6,6 @@
 #include "ops/ew.cuh"
 #include "ops/reshape.cuh"
 #include "ops/broadcast.cuh"
+#include "ops/permute.cuh"
 
 #endif

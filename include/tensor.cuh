@@ -76,6 +76,7 @@ public:
 
     Tensor reshape(std::vector<size_t> new_shape);
     Tensor broadcast_to(std::vector<size_t> shape);
+    Tensor permute(std::vector<int> axes);
     //Tensor summation(std::vector<int> axes);
 
     /* backward */
@@ -500,12 +501,25 @@ Tensor<Dtype> Tensor<Dtype>::broadcast_to(std::vector<size_t> shape) {
     return (*op)(op, inputs, __backend);
 }
 
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::permute(std::vector<int> axes) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<PermuteOp<Dtype>>(axes, OpType::Permute);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
 /*
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::summation(std::vector<int> axes) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<SummationOp<Dtype>>(axes, OpType::Summation);
+        std::make_shared<SummationOp<Dtype>>(axes, __cached_data->shape(), OpType::Summation);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
