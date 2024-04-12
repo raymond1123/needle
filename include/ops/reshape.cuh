@@ -43,6 +43,10 @@ public:
 
         cached_data_type out = out_grad->deep_cpy_cached_data();
         out->set_shape(tensor->inputs[0]->shape());
+        out->compact_strides();
+
+        out->cached = true;
+        out->is_compact = true;
 
         return {out};
     }

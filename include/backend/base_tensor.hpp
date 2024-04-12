@@ -143,7 +143,6 @@ void BaseTensor<Dtype>::compact() {
 
     size_t out_size = _prod(__shape);
     auto new_array = array->compact(out_size, __shape, __strides, __offset);
-    //array.reset(new_array.get());
     array = new_array;
 
     compact_strides();

@@ -125,6 +125,8 @@ void bind_tensor(py::module &m, const char *name) {
         .def("reshape", &Tensor<Dtype>::reshape)
         .def("broadcast_to", &Tensor<Dtype>::broadcast_to)
         .def("permute", &Tensor<Dtype>::permute)
+        .def("sum", (Tensor<Dtype> (Tensor<Dtype>::*)(std::vector<int>)) &Tensor<Dtype>::summation, "Summation with specified axes")
+        .def("sum", (Tensor<Dtype> (Tensor<Dtype>::*)()) &Tensor<Dtype>::summation, "Summation without specified axes")
         .def("to_numpy", &Tensor<Dtype>::to_numpy)
         .def("device", &Tensor<Dtype>::device)
         .def("shape", &Tensor<Dtype>::shape)

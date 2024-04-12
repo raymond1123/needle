@@ -56,17 +56,21 @@ CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape,
     size_t size = this->_prod(this->__shape);
     this->array.reset(new CudaArray<Dtype>(size, create_cache));
 
-    std::cout << "selected cuda backend 2" << std::endl;
+    std::cout << "selected cuda backend 2, " << create_cache << std::endl;
 }
 
 template<typename Dtype>
 void CudaTensor<Dtype>::zeros() {
     this->array->fill_val(static_cast<Dtype>(0));
+    this->is_compact = true;
+    this->cached = true;
 }
 
 template<typename Dtype>
 void CudaTensor<Dtype>::ones() {
     this->array->fill_val(static_cast<Dtype>(1));
+    this->is_compact = true;
+    this->cached = true;
 }
 
 template<typename Dtype>
@@ -76,7 +80,6 @@ void CudaTensor<Dtype>::_from_numpy(py::array_t<Dtype> &a) {
     this->array->mem_cpy(const_cast<Dtype*>(ptr),
                          MemCpyType::Host2Dev);
 
-    //if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
 }
 
 template<typename Dtype>
@@ -92,9 +95,7 @@ py::array_t<Dtype> CudaTensor<Dtype>::to_numpy() {
     Dtype* host_ptr = (Dtype*)std::malloc(this->array->size() * sizeof(Dtype));
     if (host_ptr == 0) throw std::bad_alloc();
 
-    //cudaError_t err = this->array->device2host(host_ptr);
     this->array->mem_cpy(host_ptr, MemCpyType::Dev2Host);
-    //if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
 
     // return numpy array
     py::capsule deallocate_buffer(host_ptr, [](void* p) { free(p); });

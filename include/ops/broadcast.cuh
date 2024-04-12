@@ -23,12 +23,14 @@ public:
         cached_data_type cached_data = __create_cached_data(_new_shape,
                                                             inputs[0]->device(), 
                                                             false);
+
         /* without deep cpy data, reuse cached data in inputs[0] */
         cached_data->array = inputs[0]->array;
 
+        //if(inputs[0]->shape().size()>1)
         __transfer_broadcast_shape(inputs[0]);
-        cached_data->set_strides(_new_strides);
 
+        cached_data->set_strides(_new_strides);
         cached_data->cached = true;
         cached_data->is_compact = false;
 
@@ -53,8 +55,12 @@ private:
 
         int size_diff = _new_shape.size() - org_shape.size();
         for(int i=org_shape.size()-1; i>=0; --i) {
-            if(org_shape[i]==1 && _new_shape[i+size_diff]>1) continue;
-            else _new_strides[i+size_diff] = org_strides[i];
+            //if(org_shape[i]==1 && _new_shape[i+size_diff]>1) {
+            if(org_shape[i]==1) {
+                _new_strides[i+size_diff] = 0;
+            } else { 
+                _new_strides[i+size_diff] = org_strides[i];
+            }
         }
     }
 

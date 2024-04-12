@@ -54,8 +54,6 @@ public:
                                           BackendType backend,
                                           bool op_on_self);
 
-    //std::shared_ptr<BaseTensor<Dtype>> realized_cached_data();
-
     /* getitem */
     Tensor operator[](std::vector<size_t> indices);
 
@@ -77,7 +75,8 @@ public:
     Tensor reshape(std::vector<size_t> new_shape);
     Tensor broadcast_to(std::vector<size_t> shape);
     Tensor permute(std::vector<int> axes);
-    //Tensor summation(std::vector<int> axes);
+    Tensor summation(std::vector<int> axes);
+    Tensor summation();
 
     /* backward */
     void backward();
@@ -514,12 +513,11 @@ Tensor<Dtype> Tensor<Dtype>::permute(std::vector<int> axes) {
     return (*op)(op, inputs, __backend);
 }
 
-/*
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::summation(std::vector<int> axes) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<SummationOp<Dtype>>(axes, __cached_data->shape(), OpType::Summation);
+        std::make_shared<SummationOp<Dtype>>(axes, OpType::Summation);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
@@ -527,7 +525,19 @@ Tensor<Dtype> Tensor<Dtype>::summation(std::vector<int> axes) {
 
     return (*op)(op, inputs, __backend);
 }
-*/
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::summation() {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<SummationOp<Dtype>>(OpType::Summation);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
 
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::operator[](std::vector<size_t> indices) {
@@ -615,13 +625,12 @@ void Tensor<Dtype>::__compute_gradient(cached_data_type out_tensor,
             op_type = tensor->op->op_type();
         } 
 
-        printf("tensor_idx=%d, op=%d, addr=%p-->", 
+        printf("tensor_idx=%d, op=%d, addr=%p-->\n", 
                tensor->tensor_idx, op_type, &tensor);
     }
     printf("\n");
     #endif
 
-    int cnt = 0;
     for(auto& tensor: reverse_topo_order) {
         tensor->grad = __sum_grad(grad_map[tensor]);
 
@@ -633,7 +642,6 @@ void Tensor<Dtype>::__compute_gradient(cached_data_type out_tensor,
                 grad_map[tensor->inputs[i]].push_back(grads[i]);
             }
         }
-        cnt += 1;
     }
 }
 
@@ -652,9 +660,10 @@ std::shared_ptr<BaseTensor<Dtype>> Tensor<Dtype>::__sum_grad(
 
     grad->zeros();
 
+
     for(auto &in_grad: input_grads) {
         std::shared_ptr<EWOp<Dtype>> op =
-                 std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
+                 std::make_shared<EWOp<Dtype>>(grad->size(), 
                                                OpType::EWAddTensor, 0, true);
         std::vector<cached_data_type> cin = {grad, in_grad};
         op->compute(cin);
@@ -690,24 +699,6 @@ void Tensor<Dtype>::__topo_sort_dfs(
 
     reverse_topo_order.push_back(tensor_shptr);
 }
-
-/*
-template<typename Dtype>
-std::shared_ptr<BaseTensor<Dtype>> Tensor<Dtype>::realized_cached_data() {
-    if(__cached_data->cached) return __cached_data;
-
-    std::vector<cached_data_type> cin;
-    cin.reserve(__cached_data->inputs.size());
-
-    for (int i=0; i<__inputs.size(); ++i)
-        cin.emplace_back(__cached_data->inputs[i]->realized_cached_data());
-
-    __cached_data = _op->compute(cin);
-
-    return __cached_data;
-}
-*/
-
 
 template<typename Dtype>
 void Tensor<Dtype>::__print_tensor_info(std::string ctor_type) {

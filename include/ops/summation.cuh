@@ -1,33 +1,40 @@
-#ifndef __EW_OP__
-#define __EW_OP__
+#ifndef __SUMMATION_OP__
+#define __SUMMATION_OP__
 
 #include "ops/generic_op.cuh"
+#include "ops/permute.cuh"
+#include "ops/broadcast.cuh"
 
 template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;
-
-constexpr int kBlockSize = 256;
-#define NUMWAVES 32
 
 template<typename Dtype>
 class ReducedSum {
 public:
     __device__ void operator()(size_t n,
+                               size_t reduce_size,
                                const Dtype* a, 
-                               const Dtype* sum) {
+                               Dtype* sum) {
 
-        const int tid = blockIdx.x * kBlockSize + threadIdx.x;
-        if (idx < n) atomicAdd(sum, a[tid]);
+        size_t tx = blockDim.x*blockIdx.x+threadIdx.x;
+        if(tx >= n) return;
+
+        size_t offset = tx*reduce_size;
+        Dtype tmp = 0;
+
+        for(size_t i=0; i<reduce_size; ++i) {
+            tmp += a[offset+i];
+        }
+
+        sum[tx] = tmp;
     }
 };
 
 template<typename Dtype>
 __global__ void __launch_bounds__(kBlockSize)
-ApplyRedSum(size_t n, 
-        Dtype* sum, const Dtype* a) {
-    //ReducedSum<Dtype> functor = ReducedSum<Dtype>();
+ApplyRedSum(size_t n, size_t reduce_size, const Dtype* a, Dtype* sum) {
     auto functor = ReducedSum<Dtype>();
-    functor(n, a, sum);
+    functor(n, reduce_size, a, sum);
 }
 
 template<typename Dtype>
@@ -36,65 +43,78 @@ protected:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
 public:
-    SummationOp(std::vector<int> axes, std::vector<size_t> shape, OpType op_type):
-        GenericOp<Dtype>(op_type), _axes(axes), 
-        _reduced_shape(std::vector<size_t>(axes.size())), _shape(shape), _num_blocks(0) {}
+    SummationOp(std::vector<int> axes, OpType op_type):
+        GenericOp<Dtype>(op_type), _axes(axes), _num_blocks(0) {}
+
+    SummationOp(OpType op_type): GenericOp<Dtype>(op_type), _num_blocks(0) {}
 
     virtual cached_data_type compute(std::vector<cached_data_type> inputs) override {
 
         assert(inputs.size()==1 && "input number of SummationOp must be 1");
 
-        /* compact inputs */
-        for(auto& input: inputs) {
-            if(!input->is_compact)
-                input->compact();
+        if(_axes.size()==0) {
+            __prepare_zero_axes(inputs[0]->shape());
+        } else {
+            __prepare_pos_axes(inputs[0]->shape());
         }
 
-        cached_data_type tmp_cached = inputs[0];
+        std::vector<int> permute_axes(_left_axes.begin(), _left_axes.end());
+        permute_axes.insert(permute_axes.end(), _axes.begin(), _axes.end());
 
-        for(int i=0; i<_axes.size(); ++i) {
+        // first permute 
+        std::shared_ptr<GenericOp<Dtype>> permute_op = 
+            std::make_shared<PermuteOp<Dtype>>(permute_axes, OpType::Permute);
+        cached_data_type permute_cache = permute_op->compute({inputs[0]});
 
-            std::vector<int> pos_axes = _axes;
-            int length_shape = _shape.size();
+        size_t final_shape = 1;
+        for(auto& s: _reduced_shape)
+            final_shape *= s;
 
-            for(int i=0; i<_axes.size(); ++i) {
-                if(_axes[i]<0) pos_axes[i] = length_shape+_axes[i];
-                else pos_axes[i] = _axes[i];
-                _reduced_shape[i] = pos_axes[i];
-            }
+        std::vector<size_t> reshape_shape = _left_shape;
+        reshape_shape.push_back(final_shape);
+        std::shared_ptr<GenericOp<Dtype>> reshape_op =
+            std::make_shared<ReshapeOp<Dtype>>(reshape_shape, OpType::Reshape);
+        cached_data_type reshape_cache = reshape_op->compute({permute_cache});
+        reshape_cache->compact(); // compact here before reduced add
 
-        }
-
-        __prepare_pos_axes();
-        cached_data_type cached_data = __create_cached_data(_shape,
+        cached_data_type cached_data = __create_cached_data(_left_shape,
                                                             inputs[0]->device());
+        _n = cached_data->size();
 
-        // base case
-        if(_axes.size()==1) {
-            _n = inputs[0]->size();
+        cudaError_t err = this->_get_num_blocks();
+        assert(err==cudaSuccess && "get_num_blocks in SummationOp failed");
 
-            cudaError_t err = this->_get_num_blocks();
-            assert(err==cudaSuccess && "get_num_blocks in SummationOp failed");
+        ApplyRedSum<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n, final_shape,
+                                                  reshape_cache->cached_ptr(),
+                                                  cached_data->cached_ptr());
+        err = cudaPeekAtLastError();
+        assert(err==cudaSuccess && "ApplyRedSum failed");
 
-            ApplyRedSum<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n,
-                                                           cached_data->cached_ptr(), 
-                                                           inputs[0]->cached_ptr());
-            err = cudaPeekAtLastError();
-            assert(err==cudaSuccess && "ApplyRedSum failed");
+        cached_data->cached = true;
+        cached_data->is_compact = true;
 
-            cached_data->cached = true;
-            cached_data->is_compact = true;
-
-            return cached_data;
-        }
-
-        return compute();
-
+        return cached_data;
     }
 
     virtual std::vector<cached_data_type> gradient(cached_data_type out_grad, 
                                                    cached_data_type tensor) override {
-        return {out_grad};
+        auto inputs = tensor->inputs;
+        std::vector<size_t> input_shape = inputs[0]->shape();
+        std::vector<size_t> reshape_shape = input_shape;
+
+        for(auto& axis: _axes)
+            reshape_shape[axis] = 1;
+
+        std::shared_ptr<GenericOp<Dtype>> reshape_op =
+            std::make_shared<ReshapeOp<Dtype>>(reshape_shape, OpType::Reshape);
+        cached_data_type reshape_cache = reshape_op->compute({out_grad});
+
+        std::shared_ptr<GenericOp<Dtype>> broadcast_op = 
+            std::make_shared<BroadcastOp<Dtype>>(input_shape, OpType::BroadcastTo);
+        cached_data_type out_cache = broadcast_op->compute({reshape_cache});
+        out_cache->compact(); // compact here before reduced add
+
+        return {out_cache};
     }
 
 protected:
@@ -107,14 +127,38 @@ protected:
     }
 
 private:
-    inline void __prepare_pos_axes() {
-        std::vector<int> pos_axes = _axes;
-        int length_shape = _shape.size();
+    inline void __prepare_zero_axes(std::vector<size_t> input_shape) {
+        for(int i=0; i<input_shape.size(); ++i)
+            _axes.push_back(i);
 
-        for(int i=0; i<_axes.size(); ++i) {
-            if(_axes[i]<0) pos_axes[i] = length_shape+_axes[i];
-            else pos_axes[i] = _axes[i];
-            _reduced_shape[i] = pos_axes[i];
+        _reduced_shape = input_shape;
+        _left_shape = {1};
+    }
+
+    inline void __prepare_pos_axes(std::vector<size_t> input_shape) {
+
+        int length_shape = input_shape.size();
+        std::vector<int> pos_axes = _axes;
+
+        for(int i=0; i<pos_axes.size(); ++i) 
+            if(pos_axes[i]<0) pos_axes[i] += length_shape;
+        std::sort(pos_axes.begin(), pos_axes.end());
+
+        for(int i=0; i<length_shape; ++i) {
+            bool in_axes = false;
+
+            for(int j=0; j<pos_axes.size(); ++j) {
+                if(i==pos_axes[j]) {
+                    in_axes = true;
+                    _reduced_shape.push_back(input_shape[i]);
+                    break;
+                }
+            }
+
+            if(!in_axes) {
+                _left_axes.push_back(i);
+                _left_shape.push_back(input_shape[i]);
+            }
         }
 
         _axes = pos_axes;
@@ -148,8 +192,11 @@ private:
 private:
     size_t _n;
     int _num_blocks;
+
     std::vector<int> _axes;
-    std::vector<size_t> _shape;
+    std::vector<int> _left_axes;
+
+    std::vector<size_t> _left_shape;
     std::vector<size_t> _reduced_shape;
 };
 

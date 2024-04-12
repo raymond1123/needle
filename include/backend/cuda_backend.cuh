@@ -177,7 +177,6 @@ std::shared_ptr<BaseArray<Dtype>> CudaArray<Dtype>::compact(size_t size,
                                                   VecToCuda(shape),
                                                   VecToCuda(strides), 
                                                   offset);
-    //this->__size = size;
     return new_array;
 }
 
