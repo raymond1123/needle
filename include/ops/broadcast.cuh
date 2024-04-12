@@ -5,6 +5,7 @@
 
 template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;
+template<typename Dtype> class SummationOp;
 
 template<typename Dtype>
 class BroadcastOp: public GenericOp<Dtype> {
@@ -37,13 +38,13 @@ public:
         return cached_data;
     }
 
-    // TODO gradient using summation
     virtual std::vector<cached_data_type> gradient(
                             cached_data_type out_grad, 
                             cached_data_type tensor) override {
 
-        cached_data_type out = out_grad->deep_cpy_cached_data();
-        //out->set_shape(tensor->inputs[0]->shape());
+        std::shared_ptr<GenericOp<Dtype>> summation_op = 
+            std::make_shared<SummationOp<Dtype>>(_broadcast_axes, OpType::Summation);
+        cached_data_type out = summation_op->compute({out_grad});
 
         return {out};
     }
@@ -54,10 +55,14 @@ private:
         auto org_strides = cached_data->strides();
 
         int size_diff = _new_shape.size() - org_shape.size();
+        for(int i=0; i<size_diff; ++i)
+            _broadcast_axes.push_back(i);
+
         for(int i=org_shape.size()-1; i>=0; --i) {
-            //if(org_shape[i]==1 && _new_shape[i+size_diff]>1) {
-            if(org_shape[i]==1) {
+            if(org_shape[i]==1 && _new_shape[i+size_diff]>1) {
+            //if(org_shape[i]==1) {
                 _new_strides[i+size_diff] = 0;
+                _broadcast_axes.push_back(i+size_diff);
             } else { 
                 _new_strides[i+size_diff] = org_strides[i];
             }
@@ -87,6 +92,7 @@ protected:
 private:
     std::vector<size_t> _new_shape;
     std::vector<size_t> _new_strides;
+    std::vector<int> _broadcast_axes;
 };
 
 #endif

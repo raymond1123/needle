@@ -37,9 +37,18 @@ public:
                             cached_data_type out_grad, 
                             cached_data_type tensor) override {
 
-        cached_data_type out = out_grad->deep_cpy_cached_data();
-        out->set_shape(tensor->inputs[0]->shape());
+        auto inputs = tensor->inputs;
+        int shape_length = inputs[0]->shape().size();
+        std::vector<int> paxes(shape_length);
 
+        for(int i=0; i<shape_length; ++i)
+            paxes[i] = _axes[_axes[i]];
+
+        std::shared_ptr<GenericOp<Dtype>> permute_op = 
+            std::make_shared<PermuteOp<Dtype>>(paxes, OpType::Permute);
+        cached_data_type out = permute_op->compute({out_grad});
+
+        out->compact(); // compact here before reduced add
         return {out};
     }
 
