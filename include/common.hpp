@@ -68,12 +68,13 @@ enum class OpType: int {
     Transpose = 18,
     Permute = 19,
     Summation = 20,
-    Flip = 21,
-    Dilate = 22,
-    Undilate = 23,
-    Stack = 24,
-    Split = 25,
-    Conv = 26
+    Slice = 21,
+    Flip = 22,
+    Dilate = 23,
+    Undilate = 24,
+    Stack = 25,
+    Split = 26,
+    Conv = 27
 };
 
 enum class DataType: int{

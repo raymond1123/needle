@@ -27,7 +27,9 @@ public:
     virtual void zeros() override;
     virtual void ones() override;
 
-    inline virtual size_t size() override {return this->array->size();}
+    inline virtual size_t size() override {
+        return this->_prod(this->__shape);
+    }
     virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const override;
     virtual inline BackendType device() override {return BackendType::CUDA;}
 

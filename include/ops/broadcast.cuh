@@ -32,6 +32,8 @@ public:
         __transfer_broadcast_shape(inputs[0]);
 
         cached_data->set_strides(_new_strides);
+        cached_data->set_offset(inputs[0]->offset());
+
         cached_data->cached = true;
         cached_data->is_compact = false;
 

@@ -2,66 +2,23 @@
 #define __CUDA_BACKEND_HPP__
 
 #include "common.hpp"
-
-#define MAX_VEC_SIZE 8
-#define BASE_THREAD_NUM 256
-
-struct CudaVec {
-  size_t size;
-  size_t data[MAX_VEC_SIZE];
-};
-
-struct CudaDims {
-  dim3 block, grid;
-};
-
-static CudaVec VecToCuda(const std::vector<size_t>& x) {
-    CudaVec shape;
-    if (x.size() > MAX_VEC_SIZE) 
-        throw std::runtime_error("Exceeded CUDA supported max dimesions");
-
-    shape.size = x.size();
-    for (size_t i = 0; i < x.size(); i++) {
-      shape.data[i] = x[i];
-    }
-    return shape;
-}
-
-static CudaDims CudaOneDim(size_t size) {
-  /**
-   * Utility function to get cuda dimensions for 1D call
-   */
-  CudaDims dim;
-  size_t num_blocks = (size + BASE_THREAD_NUM - 1) / BASE_THREAD_NUM;
-  dim.block = dim3(BASE_THREAD_NUM, 1, 1);
-  dim.grid = dim3(num_blocks, 1, 1);
-  return dim;
-}
-
-__device__ void get_index(size_t gid, size_t *indices, CudaVec &shape) {
-    uint32_t cur=1, pre=1;
-    for(int i=shape.size-1; i>=0; --i) {
-        cur *= shape.data[i];
-        indices[i] = gid%cur/pre;
-        pre *= shape.data[i];
-    }
-}
+#include "backend/cuda_util.cuh"
 
 template<typename Dtype>
 __global__ void CompactKernel(const Dtype* a, Dtype* out, 
                               size_t size, CudaVec shape,
                               CudaVec strides, size_t offset) {
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t indices[MAX_VEC_SIZE];
+    get_index(gid, indices, shape);
 
-  size_t indices[MAX_VEC_SIZE];
-  get_index(gid, indices, shape);
+    size_t in_idx = offset;
+    for (int i=0; i<shape.size; ++i)
+        in_idx += indices[i]*strides.data[i];
 
-  size_t in_idx = offset;
-  for (int i=0; i<shape.size; ++i)
-    in_idx += indices[i]*strides.data[i];
-
-  if (gid<size)
-    out[gid] = a[in_idx];
+    if (gid<size) {
+        out[gid] = a[in_idx];
+    }
 }
 
 template<typename Dtype>
@@ -169,6 +126,9 @@ std::shared_ptr<BaseArray<Dtype>> CudaArray<Dtype>::compact(size_t size,
                                             size_t offset) {
 
     cached_array_type new_array = std::make_shared<CudaArray<Dtype>>(size);
+
+    CudaVec sss = VecToCuda(shape);
+    CudaVec ttt = VecToCuda(strides);
 
     CudaDims dim = CudaOneDim(size);
     CompactKernel<Dtype><<<dim.grid, dim.block>>>(this->__ptr,

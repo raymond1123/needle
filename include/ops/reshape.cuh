@@ -20,17 +20,13 @@ public:
         assert(inputs.size() == 1 && "number of reshape input must be 1");
 
         /* awkward... is there any better idea not compacting in here */
-        for(auto& input: inputs) {
-            if(!input->is_compact)
-                input->compact();
-        }
+        inputs[0]->compact();
 
         cached_data_type cached_data = __create_cached_data(_new_shape,
                                                             inputs[0]->device(), false);
         /* without deep cpy data, reuse cached data in inputs[0] */
         cached_data->array = inputs[0]->array;
-        printf("reshape: cached_data->cached_ptr()=%p, inputs[0]->cached_ptr()=%p\n", 
-               cached_data->cached_ptr(), inputs[0]->cached_ptr());
+        cached_data->set_offset(inputs[0]->offset());
 
         cached_data->cached = true;
         cached_data->is_compact = true;

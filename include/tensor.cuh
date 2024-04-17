@@ -8,7 +8,6 @@ namespace py = pybind11;
 
 static int tensor_idx=0;
 
-
 template<typename Dtype>
 class Tensor {
 public:
@@ -36,6 +35,7 @@ public:
     inline py::array_t<Dtype> grad() { return __cached_data->grad->to_numpy(); }
     inline std::vector<size_t> shape() { return __cached_data->shape(); }
     inline std::vector<size_t> strides() { return __cached_data->strides(); }
+    inline size_t offset() { return __cached_data->offset(); }
     inline BackendType device() {return __backend;}
     virtual inline size_t size() {return __cached_data->size();};
 
@@ -74,9 +74,15 @@ public:
 
     Tensor reshape(std::vector<size_t> new_shape);
     Tensor broadcast_to(std::vector<size_t> shape);
+    Tensor slice(std::vector<py::object> indices);
     Tensor permute(std::vector<int> axes);
+    Tensor transpose(std::vector<int> axes);
     Tensor summation(std::vector<int> axes);
     Tensor summation();
+    /*
+    std::vector<Tensor> split(const Tensor& other, 
+                              std::vector<size_t> shape);
+    */
 
     /* backward */
     void backward();
@@ -514,6 +520,19 @@ Tensor<Dtype> Tensor<Dtype>::permute(std::vector<int> axes) {
 }
 
 template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::transpose(std::vector<int> axes) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<TransposeOp<Dtype>>(axes, OpType::Transpose);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::summation(std::vector<int> axes) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
@@ -539,9 +558,39 @@ Tensor<Dtype> Tensor<Dtype>::summation() {
     return (*op)(op, inputs, __backend);
 }
 
+/*
+template<typename Dtype>
+Tensor<Dtype> std::vector<Tensor> split(const Tensor& other, 
+                                        std::vector<size_t> shape) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<SummationOp<Dtype>>(OpType::Summation);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+
+}
+
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::operator[](std::vector<size_t> indices) {
 
+}
+*/
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::slice(std::vector<py::object> indices) {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<SliceOp<Dtype>>(OpType::Slice, indices, 
+                                         shape(), strides(), offset());
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
 }
 
 template<typename Dtype>

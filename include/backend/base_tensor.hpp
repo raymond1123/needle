@@ -31,14 +31,15 @@ public:
 
     inline std::vector<size_t> shape() {return __shape;}
     inline std::vector<size_t> strides() {return __strides;}
+    inline size_t offset() {return __offset;}
+
     void set_shape(std::vector<size_t> new_shape) {
         __shape = new_shape;
         compact_strides();
     }
 
-    void set_strides(std::vector<size_t> new_strides) {
-        __strides = new_strides;
-    }
+    inline void set_strides(std::vector<size_t> new_strides) {__strides = new_strides;}
+    inline void set_offset(size_t offset) {__offset = offset;}
 
     inline Dtype* cached_ptr() { return this->array->get_ptr();}
     inline void set_cached_ptr(Dtype* ptr) { array->set_ptr(ptr); }
@@ -95,8 +96,8 @@ size_t BaseTensor<Dtype>::_prod(const std::vector<size_t>& shape) {
 
 template<typename Dtype>
 void BaseTensor<Dtype>::compact_strides() {
-    std::vector<size_t> r_shape(__shape);
-    reverse(r_shape.begin(), r_shape.end());
+    //std::vector<size_t> r_shape(__shape);
+    //reverse(r_shape.begin(), r_shape.end());
 
     __strides[__strides.size()-1] = 1;
 
@@ -146,6 +147,7 @@ void BaseTensor<Dtype>::compact() {
     array = new_array;
 
     compact_strides();
+    __offset=0;
     is_compact = true;
 }
 

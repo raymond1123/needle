@@ -70,6 +70,7 @@ public:
         for(auto& s: _reduced_shape)
             final_shape *= s;
 
+        // second reshape
         std::vector<size_t> reshape_shape = _left_shape;
         reshape_shape.push_back(final_shape);
         std::shared_ptr<GenericOp<Dtype>> reshape_op =
@@ -81,7 +82,7 @@ public:
                                                             inputs[0]->device());
         _n = cached_data->size();
 
-        cudaError_t err = this->_get_num_blocks();
+        cudaError_t err = _get_num_blocks();
         assert(err==cudaSuccess && "get_num_blocks in SummationOp failed");
 
         ApplyRedSum<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n, final_shape,

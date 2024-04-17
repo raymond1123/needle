@@ -123,8 +123,10 @@ void bind_tensor(py::module &m, const char *name) {
             py::arg("backend"))
 
         .def("reshape", &Tensor<Dtype>::reshape)
+        .def("__getitem__", &Tensor<Dtype>::slice)
         .def("broadcast_to", &Tensor<Dtype>::broadcast_to)
         .def("permute", &Tensor<Dtype>::permute)
+        .def("transpose", &Tensor<Dtype>::transpose)
         .def("sum", (Tensor<Dtype> (Tensor<Dtype>::*)(std::vector<int>)) &Tensor<Dtype>::summation, "Summation with specified axes")
         .def("sum", (Tensor<Dtype> (Tensor<Dtype>::*)()) &Tensor<Dtype>::summation, "Summation without specified axes")
         .def("to_numpy", &Tensor<Dtype>::to_numpy)
@@ -132,6 +134,7 @@ void bind_tensor(py::module &m, const char *name) {
         .def("shape", &Tensor<Dtype>::shape)
         .def("size", &Tensor<Dtype>::size)
         .def("strides", &Tensor<Dtype>::strides)
+        .def("offset", &Tensor<Dtype>::offset)
         .def("contiguous", &Tensor<Dtype>::contiguous)
         .def("backward", &Tensor<Dtype>::backward)
         .def("grad", &Tensor<Dtype>::grad)
@@ -159,8 +162,16 @@ void bind_tensor(py::module &m, const char *name) {
 PYBIND11_MODULE(tensor, m) {
     bind_tensor<float>(m, "Tensor");
 
-    /* functions */
     m.def("ones", &ones<float>, py::arg("shape"), py::arg("backend"));
     m.def("zeros", &zeros<float>, py::arg("shape"), py::arg("backend"));
 }
+
+/*
+PYBIND11_MODULE(tensor, m) {
+    bind_tensor<double>(m, "Tensor");
+
+    m.def("ones", &ones<double>, py::arg("shape"), py::arg("backend"));
+    m.def("zeros", &zeros<double>, py::arg("shape"), py::arg("backend"));
+}
+*/
 

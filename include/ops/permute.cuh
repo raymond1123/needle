@@ -27,6 +27,12 @@ public:
         /* without deep cpy data, reuse cached data in inputs[0] */
         cached_data->array = inputs[0]->array;
         cached_data->set_strides(_new_strides);
+        cached_data->set_offset(inputs[0]->offset());
+
+        for(auto& s: cached_data->shape())
+            printf("sssssssssss: %lu\n", s);
+        for(auto& s: cached_data->strides())
+            printf("tttttttttttt: %lu\n", s);
 
         cached_data->cached = true;
         cached_data->is_compact = false;

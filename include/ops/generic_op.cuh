@@ -40,6 +40,40 @@ public:
     OpType _op_type;
 };
 
+template<typename Dtype>
+class TupleGenericOp {
+public:
+    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+
+public:
+    TupleGenericOp(OpType op_type):_op_type(op_type) {};
+
+    virtual cached_data_type compute(std::vector<cached_data_type> inputs)=0;
+
+    virtual std::vector<cached_data_type> gradient(
+                            cached_data_type out_grad, 
+                            cached_data_type tensor)=0;
+
+    inline Tensor<Dtype> operator()(const std::shared_ptr<TupleGenericOp<Dtype>> op,
+                                    std::vector<cached_data_type>& inputs,
+                                    BackendType backend) const {
+        return Tensor<Dtype>::make_from_op(op, inputs, backend);
+    }
+
+    inline cached_data_type operator()(const std::shared_ptr<TupleGenericOp<Dtype>> op,
+                                    std::vector<cached_data_type>& inputs,
+                                    BackendType backend, bool op_on_self) const {
+        return Tensor<Dtype>::make_from_op_on_self(op, inputs, backend, op_on_self);
+    }
+
+    inline int op_type() {return static_cast<int>(_op_type);}
+
+protected:
+    virtual inline cudaError_t _get_num_blocks()=0;
+public:
+    OpType _op_type;
+};
+
 
 #endif
 
@@ -55,9 +89,6 @@ public:
 //13. template<Dtype> Tensor<Dtype> tanh(const Tensor<Dtype>& a);
 //
 ///* input one tensor and a vector; output one Tensor */
-//15. template<Dtype> Tensor<Dtype> broadcast_to(const Tensor<Dtype>& a, const std::vector<int>& shape);
-//17. template<Dtype> Tensor<Dtype> summation(const Tensor<Dtype>& a, const std::vector<int>& axes);
-//16. template<Dtype> Tensor<Dtype> transpose(const Tensor<Dtype>& a, const std::vector<int>& axes);
 //18. template<Dtype> Tensor<Dtype> flip(const Tensor<Dtype>&a, const std::vector<int>& axes);
 //
 ///* input one tensor and two vector; output one Tensor */
@@ -72,9 +103,9 @@ public:
 //
 ///* input two tensor and two int; output one Tensor */
 //23. template<Dtype> Tensor<Dtype> conv(const Tensor<Dtype>& a, 
-//                                   const Tensor<Dtype>& b, 
-//                                   const int stride=1, 
-//                                   const int padding=1);
+//                                  const Tensor<Dtype>& b, 
+//                                  const int stride=1, 
+//                                  const int padding=1);
 
 
 
