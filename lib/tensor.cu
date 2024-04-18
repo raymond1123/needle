@@ -3,12 +3,12 @@
 namespace py = pybind11;
 
 template<typename Dtype>
-Tensor<Dtype> ones(std::vector<size_t> shape, BackendType backend) {
+Tensor<Dtype> ones(std::vector<int32_t> shape, BackendType backend) {
     return Tensor<Dtype>::ones(shape, backend);
 }
 
 template<typename Dtype>
-Tensor<Dtype> zeros(std::vector<size_t> shape, BackendType backend) {
+Tensor<Dtype> zeros(std::vector<int32_t> shape, BackendType backend) {
     return Tensor<Dtype>::zeros(shape, backend);
 }
 
@@ -123,6 +123,7 @@ void bind_tensor(py::module &m, const char *name) {
             py::arg("backend"))
 
         .def("reshape", &Tensor<Dtype>::reshape)
+        .def("flip", &Tensor<Dtype>::flip)
         .def("__getitem__", &Tensor<Dtype>::slice)
         .def("broadcast_to", &Tensor<Dtype>::broadcast_to)
         .def("permute", &Tensor<Dtype>::permute)

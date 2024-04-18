@@ -45,12 +45,12 @@ protected:
 
 public:
     SliceOp(OpType op_type, std::vector<py::object>& indices, 
-            std::vector<size_t> shape, std::vector<size_t> strides,
+            std::vector<int32_t> shape, std::vector<int32_t> strides,
             size_t offset):
         GenericOp<Dtype>(op_type), _indices(indices), 
         _org_shape(shape), _org_strides(strides),
-        _new_shape(std::vector<size_t>(shape.size())), 
-        _new_strides(std::vector<size_t>(shape.size())), 
+        _new_shape(std::vector<int32_t>(shape.size())), 
+        _new_strides(std::vector<int32_t>(shape.size())), 
         _offset(offset), _num_blocks(0) {}
 
     virtual cached_data_type compute(std::vector<cached_data_type> inputs) override {
@@ -195,7 +195,7 @@ private:
         return cudaSuccess;
     }
 
-    inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
+    inline cached_data_type __create_cached_data(const std::vector<int32_t>& shape, 
                                                  BackendType device,
                                                  bool create_cache=true) {
         cached_data_type cached_data = nullptr;
@@ -215,11 +215,11 @@ private:
     int _num_blocks;
 
     std::vector<py::object> _indices;
-    std::vector<size_t> _org_shape;
-    std::vector<size_t> _org_strides;
+    std::vector<int32_t> _org_shape;
+    std::vector<int32_t> _org_strides;
 
-    std::vector<size_t> _new_shape;
-    std::vector<size_t> _new_strides;
+    std::vector<int32_t> _new_shape;
+    std::vector<int32_t> _new_strides;
     size_t _offset;
 
     std::vector<std::vector<Py_ssize_t>> _pos_slices;

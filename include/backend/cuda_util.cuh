@@ -6,14 +6,14 @@
 
 struct CudaVec {
   size_t size;
-  size_t data[MAX_VEC_SIZE];
+  int32_t data[MAX_VEC_SIZE];
 };
 
 struct CudaDims {
   dim3 block, grid;
 };
 
-static CudaVec VecToCuda(const std::vector<size_t>& x) {
+static CudaVec VecToCuda(const std::vector<int32_t>& x) {
     CudaVec shape;
     if (x.size() > MAX_VEC_SIZE) 
         throw std::runtime_error("Exceeded CUDA supported max dimesions");

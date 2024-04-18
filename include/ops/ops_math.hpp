@@ -10,5 +10,6 @@
 #include "ops/transpose.cuh"
 #include "ops/summation.cuh"
 #include "ops/slice.cuh"
+#include "ops/flip.cuh"
 
 #endif

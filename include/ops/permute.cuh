@@ -29,11 +29,6 @@ public:
         cached_data->set_strides(_new_strides);
         cached_data->set_offset(inputs[0]->offset());
 
-        for(auto& s: cached_data->shape())
-            printf("sssssssssss: %lu\n", s);
-        for(auto& s: cached_data->strides())
-            printf("tttttttttttt: %lu\n", s);
-
         cached_data->cached = true;
         cached_data->is_compact = false;
         return cached_data;
@@ -59,8 +54,8 @@ public:
     }
 
 private:
-    inline void __prepare_pos_axes(std::vector<size_t> shape,
-                                   std::vector<size_t> strides) {
+    void __prepare_pos_axes(std::vector<int32_t> shape,
+                            std::vector<int32_t> strides) {
         int length_shape = shape.size();
         _new_strides = strides;
         _new_shape = shape;
@@ -76,7 +71,7 @@ private:
         }
     }
 
-    inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
+    inline cached_data_type __create_cached_data(const std::vector<int32_t>& shape, 
                                                  BackendType device,
                                                  bool create_cache=true) {
         cached_data_type cached_data = nullptr;
@@ -98,8 +93,8 @@ protected:
 
 private:
     std::vector<int> _axes;
-    std::vector<size_t> _new_shape;
-    std::vector<size_t> _new_strides;
+    std::vector<int32_t> _new_shape;
+    std::vector<int32_t> _new_strides;
 };
 
 #endif

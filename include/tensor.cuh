@@ -19,8 +19,8 @@ public:
            std::shared_ptr<GenericOp<Dtype>> op=nullptr,
            std::vector<cached_data_type> inputs={nullptr});
 
-    static Tensor ones(std::vector<size_t> shape, BackendType backend);
-    static Tensor zeros(std::vector<size_t> shape, BackendType backend);
+    static Tensor ones(std::vector<int32_t> shape, BackendType backend);
+    static Tensor zeros(std::vector<int32_t> shape, BackendType backend);
 
     /* move/cpy constructor */
     Tensor(Tensor&& other) noexcept;
@@ -33,8 +33,8 @@ public:
 
     inline py::array_t<Dtype> to_numpy() { return __cached_data->to_numpy(); }
     inline py::array_t<Dtype> grad() { return __cached_data->grad->to_numpy(); }
-    inline std::vector<size_t> shape() { return __cached_data->shape(); }
-    inline std::vector<size_t> strides() { return __cached_data->strides(); }
+    inline std::vector<int32_t> shape() { return __cached_data->shape(); }
+    inline std::vector<int32_t> strides() { return __cached_data->strides(); }
     inline size_t offset() { return __cached_data->offset(); }
     inline BackendType device() {return __backend;}
     virtual inline size_t size() {return __cached_data->size();};
@@ -70,15 +70,20 @@ public:
     Tensor op_pow(Tensor& other);
     Tensor op_pow(const Dtype scalar);
 
+    //Tensor matmul(Tensor& A, Tensor& B);
     Tensor& operator+=(const Tensor& other);
 
-    Tensor reshape(std::vector<size_t> new_shape);
-    Tensor broadcast_to(std::vector<size_t> shape);
+    Tensor reshape(std::vector<int32_t> new_shape);
+    Tensor flip(std::vector<int> axes);
+    Tensor broadcast_to(std::vector<int32_t> shape);
     Tensor slice(std::vector<py::object> indices);
+    //void setitem(std::vector<py::object> rhs_indices,
+    //               const Tensor& other);
     Tensor permute(std::vector<int> axes);
     Tensor transpose(std::vector<int> axes);
     Tensor summation(std::vector<int> axes);
     Tensor summation();
+
     /*
     std::vector<Tensor> split(const Tensor& other, 
                               std::vector<size_t> shape);
@@ -156,7 +161,7 @@ Tensor<Dtype>::Tensor(BackendType backend,
 }
 
 template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::ones(std::vector<size_t> shape,
+Tensor<Dtype> Tensor<Dtype>::ones(std::vector<int32_t> shape,
                                   BackendType backend) {
 
     Tensor<Dtype> tensor = Tensor<Dtype>(backend);
@@ -183,7 +188,7 @@ Tensor<Dtype> Tensor<Dtype>::ones(std::vector<size_t> shape,
 }
 
 template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::zeros(std::vector<size_t> shape,
+Tensor<Dtype> Tensor<Dtype>::zeros(std::vector<int32_t> shape,
                                   BackendType backend) {
     Tensor<Dtype> tensor = Tensor<Dtype>(backend);
 
@@ -476,8 +481,24 @@ Tensor<Dtype> Tensor<Dtype>::op_pow(const Dtype scalar) {
     return (*op)(op, inputs, __backend);
 }
 
+/*
 template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::reshape(std::vector<size_t> new_shape) {
+Tensor<Dtype> matmul(Tensor& A, Tensor& B) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
+                                      OpType::EWPowScalar,
+                                      scalar);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}*/
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::reshape(std::vector<int32_t> new_shape) {
     size_t new_size = 1;
     for (auto &s: new_shape)
         new_size *= s;
@@ -494,7 +515,20 @@ Tensor<Dtype> Tensor<Dtype>::reshape(std::vector<size_t> new_shape) {
 }
 
 template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::broadcast_to(std::vector<size_t> shape) {
+Tensor<Dtype> Tensor<Dtype>::flip(std::vector<int> axes) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<FlipOp<Dtype>>(OpType::Flip, axes);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::broadcast_to(std::vector<int32_t> shape) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
         std::make_shared<BroadcastOp<Dtype>>(shape, OpType::BroadcastTo);
@@ -592,6 +626,23 @@ Tensor<Dtype> Tensor<Dtype>::slice(std::vector<py::object> indices) {
 
     return (*op)(op, inputs, __backend);
 }
+
+/*
+template<typename Dtype>
+void Tensor<Dtype>::setitem(std::vector<py::object> rhs_indices,
+                   const Tensor& other) {
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<SliceOp<Dtype>>(OpType::Slice, indices, 
+                                         shape(), strides(), offset());
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    (*op)(op, inputs, __backend);
+}
+*/
 
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::make_from_op(const std::shared_ptr<GenericOp<Dtype>> op,
@@ -708,7 +759,6 @@ std::shared_ptr<BaseTensor<Dtype>> Tensor<Dtype>::__sum_grad(
     }
 
     grad->zeros();
-
 
     for(auto &in_grad: input_grads) {
         std::shared_ptr<EWOp<Dtype>> op =

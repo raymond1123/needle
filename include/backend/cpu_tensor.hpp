@@ -13,7 +13,7 @@ template<typename Dtype>
 class CpuTensor: public BaseTensor<Dtype> {
 public:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
-    explicit CpuTensor(const std::vector<size_t>& shape, 
+    explicit CpuTensor(const std::vector<int32_t>& shape, 
                        bool create_cache=true);
     CpuTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
                std::vector<cached_data_type> inputs): BaseTensor<Dtype>(op, inputs) {}
@@ -51,7 +51,7 @@ CpuTensor<Dtype>::CpuTensor(py::array_t<Dtype>& np_array):
 }
 
 template<typename Dtype>
-CpuTensor<Dtype>::CpuTensor(const std::vector<size_t>& shape,
+CpuTensor<Dtype>::CpuTensor(const std::vector<int32_t>& shape,
                             bool create_cache):
     BaseTensor<Dtype>(shape) {
     size_t size = this->_prod(this->__shape);
@@ -80,13 +80,12 @@ void CpuTensor<Dtype>::_from_numpy(py::array_t<Dtype> &a) {
 
 template<typename Dtype>
 py::array_t<Dtype> CpuTensor<Dtype>::to_numpy() {
-    std::vector<size_t> numpy_strides = this->__strides;
+    std::vector<int32_t> numpy_strides = this->__strides;
     std::transform(numpy_strides.begin(), 
                    numpy_strides.end(), 
                    numpy_strides.begin(),
-                   [](size_t& c) { return c * sizeof(Dtype); });
+                   [](int32_t& c) { return c * sizeof(Dtype); });
 
-    //return this->array->to_np(this->__shape, numpy_strides, this->__offset);
     return py::array_t<Dtype>(this->__shape, numpy_strides, 
                               this->cached_ptr() + this->__offset);
 }

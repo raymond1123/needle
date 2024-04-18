@@ -13,9 +13,9 @@ protected:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
 public:
-    BroadcastOp(std::vector<size_t> new_shape, OpType op_type): 
+    BroadcastOp(std::vector<int32_t> new_shape, OpType op_type): 
         GenericOp<Dtype>(op_type), _new_shape(new_shape), 
-        _new_strides(std::vector<size_t>(new_shape.size())) {}
+        _new_strides(std::vector<int32_t>(new_shape.size())) {}
 
     virtual cached_data_type compute(std::vector<cached_data_type> inputs) override {
 
@@ -28,7 +28,6 @@ public:
         /* without deep cpy data, reuse cached data in inputs[0] */
         cached_data->array = inputs[0]->array;
 
-        //if(inputs[0]->shape().size()>1)
         __transfer_broadcast_shape(inputs[0]);
 
         cached_data->set_strides(_new_strides);
@@ -62,7 +61,6 @@ private:
 
         for(int i=org_shape.size()-1; i>=0; --i) {
             if(org_shape[i]==1 && _new_shape[i+size_diff]>1) {
-            //if(org_shape[i]==1) {
                 _new_strides[i+size_diff] = 0;
                 _broadcast_axes.push_back(i+size_diff);
             } else { 
@@ -71,7 +69,7 @@ private:
         }
     }
 
-    inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
+    inline cached_data_type __create_cached_data(const std::vector<int32_t>& shape, 
                                                  BackendType device,
                                                  bool create_cache) {
         cached_data_type cached_data = nullptr;
@@ -92,8 +90,8 @@ protected:
     }
 
 private:
-    std::vector<size_t> _new_shape;
-    std::vector<size_t> _new_strides;
+    std::vector<int32_t> _new_shape;
+    std::vector<int32_t> _new_strides;
     std::vector<int> _broadcast_axes;
 };
 

@@ -71,7 +71,7 @@ public:
             final_shape *= s;
 
         // second reshape
-        std::vector<size_t> reshape_shape = _left_shape;
+        std::vector<int32_t> reshape_shape = _left_shape;
         reshape_shape.push_back(final_shape);
         std::shared_ptr<GenericOp<Dtype>> reshape_op =
             std::make_shared<ReshapeOp<Dtype>>(reshape_shape, OpType::Reshape);
@@ -100,8 +100,8 @@ public:
     virtual std::vector<cached_data_type> gradient(cached_data_type out_grad, 
                                                    cached_data_type tensor) override {
         auto inputs = tensor->inputs;
-        std::vector<size_t> input_shape = inputs[0]->shape();
-        std::vector<size_t> reshape_shape = input_shape;
+        std::vector<int32_t> input_shape = inputs[0]->shape();
+        std::vector<int32_t> reshape_shape = input_shape;
 
         for(auto& axis: _axes)
             reshape_shape[axis] = 1;
@@ -128,7 +128,7 @@ protected:
     }
 
 private:
-    inline void __prepare_zero_axes(std::vector<size_t> input_shape) {
+    inline void __prepare_zero_axes(std::vector<int32_t> input_shape) {
         for(int i=0; i<input_shape.size(); ++i)
             _axes.push_back(i);
 
@@ -136,7 +136,7 @@ private:
         _left_shape = {1};
     }
 
-    inline void __prepare_pos_axes(std::vector<size_t> input_shape) {
+    inline void __prepare_pos_axes(std::vector<int32_t> input_shape) {
 
         int length_shape = input_shape.size();
         std::vector<int> pos_axes = _axes;
@@ -175,7 +175,7 @@ private:
         return cudaSuccess;
     }
 
-    inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
+    inline cached_data_type __create_cached_data(const std::vector<int32_t>& shape, 
                                                  BackendType device,
                                                  bool create_cache=true) {
         cached_data_type cached_data = nullptr;
@@ -197,8 +197,8 @@ private:
     std::vector<int> _axes;
     std::vector<int> _left_axes;
 
-    std::vector<size_t> _left_shape;
-    std::vector<size_t> _reduced_shape;
+    std::vector<int32_t> _left_shape;
+    std::vector<int32_t> _reduced_shape;
 };
 
 #endif

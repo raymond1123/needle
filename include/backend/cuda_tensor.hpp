@@ -16,7 +16,7 @@ public:
     explicit CudaTensor(py::array_t<Dtype>& np_array);
     CudaTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
                std::vector<cached_data_type> inputs): BaseTensor<Dtype>(op, inputs) {}
-    explicit CudaTensor(const std::vector<size_t>& shape, 
+    explicit CudaTensor(const std::vector<int32_t>& shape, 
                         bool create_cache=true);
     ~CudaTensor() {}
 
@@ -52,7 +52,7 @@ CudaTensor<Dtype>::CudaTensor(py::array_t<Dtype>& np_array):
 }
 
 template<typename Dtype>
-CudaTensor<Dtype>::CudaTensor(const std::vector<size_t>& shape, 
+CudaTensor<Dtype>::CudaTensor(const std::vector<int32_t>& shape, 
                               bool create_cache):
     BaseTensor<Dtype>(shape) {
     size_t size = this->_prod(this->__shape);
@@ -87,11 +87,11 @@ void CudaTensor<Dtype>::_from_numpy(py::array_t<Dtype> &a) {
 template<typename Dtype>
 py::array_t<Dtype> CudaTensor<Dtype>::to_numpy() {
 
-    std::vector<size_t> numpy_strides = this->__strides;
+    std::vector<int32_t> numpy_strides = this->__strides;
     std::transform(numpy_strides.begin(), 
                    numpy_strides.end(), 
                    numpy_strides.begin(),
-                   [](size_t& c) { return c * sizeof(Dtype); });
+                   [](int32_t& c) { return c * sizeof(Dtype); });
 
     // copy memory to host
     Dtype* host_ptr = (Dtype*)std::malloc(this->array->size() * sizeof(Dtype));

@@ -13,7 +13,7 @@ public:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
     using cached_array_type = std::shared_ptr<BaseArray<Dtype>>;
 
-    BaseTensor(const std::vector<size_t>& shape);
+    BaseTensor(const std::vector<int32_t>& shape);
     BaseTensor(py::array_t<Dtype>& np_array);
 
     BaseTensor(const std::shared_ptr<GenericOp<Dtype>> op, 
@@ -29,16 +29,16 @@ public:
     virtual BackendType device()=0;
     virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const=0;
 
-    inline std::vector<size_t> shape() {return __shape;}
-    inline std::vector<size_t> strides() {return __strides;}
+    inline std::vector<int32_t> shape() {return __shape;}
+    inline std::vector<int32_t> strides() {return __strides;}
     inline size_t offset() {return __offset;}
 
-    void set_shape(std::vector<size_t> new_shape) {
+    void set_shape(std::vector<int32_t> new_shape) {
         __shape = new_shape;
         compact_strides();
     }
 
-    inline void set_strides(std::vector<size_t> new_strides) {__strides = new_strides;}
+    inline void set_strides(std::vector<int32_t> new_strides) {__strides = new_strides;}
     inline void set_offset(size_t offset) {__offset = offset;}
 
     inline Dtype* cached_ptr() { return this->array->get_ptr();}
@@ -53,7 +53,7 @@ public:
 protected:
     virtual void _from_numpy(py::array_t<Dtype> &np_array)=0;
 
-    size_t _prod(const std::vector<size_t> &shape);
+    size_t _prod(const std::vector<int32_t> &shape);
     void _get_info_from_numpy(py::array_t<Dtype> &np_array);
 
 public:
@@ -68,14 +68,16 @@ public:
 
 protected:
     py::dtype __dtype;
-    std::vector<size_t> __shape, __strides;
+    std::vector<int32_t> __shape;
+    std::vector<int32_t> __strides;
     size_t __offset;
     bool __cached;
 };
 
 template<typename Dtype>
-BaseTensor<Dtype>::BaseTensor(const std::vector<size_t>& shape):
-    __shape(shape), __strides(shape), __offset(0), 
+BaseTensor<Dtype>::BaseTensor(const std::vector<int32_t>& shape):
+    __shape(shape), __offset(0),
+    __strides(std::vector<int32_t>(shape.size())), 
     cached(false), is_compact(true) {
     compact_strides();
 }
@@ -87,7 +89,7 @@ BaseTensor<Dtype>::BaseTensor(py::array_t<Dtype>& np_array):
 }
 
 template<typename Dtype>
-size_t BaseTensor<Dtype>::_prod(const std::vector<size_t>& shape) {
+size_t BaseTensor<Dtype>::_prod(const std::vector<int32_t>& shape) {
     size_t size = 1;
     for (auto &s: __shape)
         size *= s;
@@ -96,9 +98,6 @@ size_t BaseTensor<Dtype>::_prod(const std::vector<size_t>& shape) {
 
 template<typename Dtype>
 void BaseTensor<Dtype>::compact_strides() {
-    //std::vector<size_t> r_shape(__shape);
-    //reverse(r_shape.begin(), r_shape.end());
-
     __strides[__strides.size()-1] = 1;
 
     /* 

@@ -370,7 +370,7 @@ private:
         return cudaSuccess;
     }
 
-    inline cached_data_type __create_cached_data(const std::vector<size_t>& shape, 
+    inline cached_data_type __create_cached_data(const std::vector<int32_t>& shape, 
                                                  BackendType device,
                                                  bool create_cache=true) {
         cached_data_type cached_data = nullptr;

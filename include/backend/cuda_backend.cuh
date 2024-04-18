@@ -46,8 +46,8 @@ public:
 
     virtual void fill_val(Dtype val) override;
     virtual cached_array_type compact(size_t size, 
-                              std::vector<size_t> shape,
-                              std::vector<size_t> strides,
+                              std::vector<int32_t> shape,
+                              std::vector<int32_t> strides,
                               size_t offset) override;
 
 private:
@@ -121,14 +121,11 @@ void CudaArray<Dtype>::fill_val(Dtype val) {
 
 template<typename Dtype>
 std::shared_ptr<BaseArray<Dtype>> CudaArray<Dtype>::compact(size_t size, 
-                                            std::vector<size_t> shape,
-                                            std::vector<size_t> strides,
+                                            std::vector<int32_t> shape,
+                                            std::vector<int32_t> strides,
                                             size_t offset) {
 
     cached_array_type new_array = std::make_shared<CudaArray<Dtype>>(size);
-
-    CudaVec sss = VecToCuda(shape);
-    CudaVec ttt = VecToCuda(strides);
 
     CudaDims dim = CudaOneDim(size);
     CompactKernel<Dtype><<<dim.grid, dim.block>>>(this->__ptr,

@@ -24,8 +24,8 @@ public:
 
     virtual void fill_val(Dtype val) override;
     virtual cached_array_type compact(size_t size, 
-                              std::vector<size_t> shape,
-                              std::vector<size_t> strides,
+                              std::vector<int32_t> shape,
+                              std::vector<int32_t> strides,
                               size_t offset) override;
 
 private:
@@ -33,8 +33,8 @@ private:
     void __assign_value(compact_mode mode,
                         const Dtype* a, 
                         Dtype* out, 
-                        std::vector<size_t> &shape,
-                        std::vector<size_t> &strides, 
+                        std::vector<int32_t> &shape,
+                        std::vector<int32_t> &strides, 
                         size_t offset,
                         std::vector<int> &indices,
                         int depth,
@@ -83,8 +83,8 @@ template<typename Dtype>
 void CpuArray<Dtype>::__assign_value(compact_mode mode,
                                     const Dtype* a, 
                                     Dtype* out, 
-                                    std::vector<size_t> &shape,
-                                    std::vector<size_t> &strides, 
+                                    std::vector<int32_t> &shape,
+                                    std::vector<int32_t> &strides, 
                                     size_t offset,
                                     std::vector<int> &indices,
                                     int depth,
@@ -119,8 +119,8 @@ void CpuArray<Dtype>::__assign_value(compact_mode mode,
 
 template<typename Dtype>
 std::shared_ptr<BaseArray<Dtype>> CpuArray<Dtype>::compact(size_t size, 
-                                           std::vector<size_t> shape,
-                                           std::vector<size_t> strides,
+                                           std::vector<int32_t> shape,
+                                           std::vector<int32_t> strides,
                                            size_t offset) {
     cached_array_type array = std::make_shared<CpuArray<Dtype>>(size);
 
