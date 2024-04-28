@@ -26,6 +26,7 @@ public:
     virtual py::array_t<Dtype> to_numpy() override;
     virtual void zeros() override;
     virtual void ones() override;
+    virtual void from_buffer() override;
 
     inline virtual size_t size() override {
         return this->_prod(this->__shape);
@@ -35,11 +36,6 @@ public:
 
 protected:
     virtual void _from_numpy(py::array_t<Dtype> &a) override;
-
-/*
-private:
-    std::shared_ptr<CudaArray<Dtype>> array;
-*/
 };
 
 template<typename Dtype>
@@ -76,8 +72,22 @@ void CudaTensor<Dtype>::ones() {
 }
 
 template<typename Dtype>
+void CudaTensor<Dtype>::from_buffer() {
+    // copy memory to host
+    Dtype* host_ptr = (Dtype*)std::malloc(this->array->size() * sizeof(Dtype));
+    if (host_ptr == 0) throw std::bad_alloc();
+
+    this->array->mem_cpy(host_ptr, MemCpyType::Dev2Host);
+
+    printf("[");
+    for(size_t i=0; i<size(); ++i)
+        printf("%f,", host_ptr[i]);
+
+    printf("]\n");
+}
+
+template<typename Dtype>
 void CudaTensor<Dtype>::_from_numpy(py::array_t<Dtype> &a) {
-    //cudaError_t err = this->array->host2device(
     const Dtype* ptr = reinterpret_cast<const Dtype*>(a.data());
     this->array->mem_cpy(const_cast<Dtype*>(ptr),
                          MemCpyType::Host2Dev);

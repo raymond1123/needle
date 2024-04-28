@@ -77,7 +77,6 @@ public:
 
 #endif
 
-
 ///* input two tensor; output one Tensor */
 //4.  template<Dtype> Tensor<Dtype> matmul(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
 //
@@ -87,9 +86,6 @@ public:
 //11. template<Dtype> Tensor<Dtype> exp(const Tensor<Dtype>& a);
 //12. template<Dtype> Tensor<Dtype> relu(const Tensor<Dtype>& a);
 //13. template<Dtype> Tensor<Dtype> tanh(const Tensor<Dtype>& a);
-//
-///* input one tensor and a vector; output one Tensor */
-//18. template<Dtype> Tensor<Dtype> flip(const Tensor<Dtype>&a, const std::vector<int>& axes);
 //
 ///* input one tensor and two vector; output one Tensor */
 //19. template<Dtype> Tensor<Dtype> dilate(const Tensor<Dtype>& a, const std::vector<int>& axes, const int dilation);

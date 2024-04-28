@@ -26,6 +26,7 @@ public:
     virtual inline size_t size()=0;
     virtual void zeros()=0;
     virtual void ones()=0;
+    virtual void from_buffer()=0;
     virtual BackendType device()=0;
     virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const=0;
 

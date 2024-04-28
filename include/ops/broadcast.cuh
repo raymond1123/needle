@@ -63,6 +63,8 @@ private:
             if(org_shape[i]==1 && _new_shape[i+size_diff]>1) {
                 _new_strides[i+size_diff] = 0;
                 _broadcast_axes.push_back(i+size_diff);
+            } else if(org_shape[i]>1 && _new_shape[i+size_diff]!= org_shape[i]) {
+                assert(true && "broadcast shape does not match");
             } else { 
                 _new_strides[i+size_diff] = org_strides[i];
             }

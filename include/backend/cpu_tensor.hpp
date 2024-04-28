@@ -26,8 +26,11 @@ public:
     virtual py::array_t<Dtype> to_numpy() override;
     virtual void zeros() override;
     virtual void ones() override;
+    virtual void from_buffer() override;
 
-    inline virtual size_t size() override {return this->array->size();}
+    inline virtual size_t size() override {
+        return this->_prod(this->__shape);
+    }
     virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const override;
 
     virtual inline BackendType device() override {return BackendType::CPU;} 
@@ -69,6 +72,17 @@ void CpuTensor<Dtype>::zeros() {
 template<typename Dtype>
 void CpuTensor<Dtype>::ones() {
     this->array->fill_val(static_cast<Dtype>(1));
+}
+
+template<typename Dtype>
+void CpuTensor<Dtype>::from_buffer() {
+
+    printf("[");
+    for(size_t i=0; i<size(); ++i)
+        printf("%f,", this->array->get_ptr()[i]);
+
+    printf("]\n");
+
 }
 
 template<typename Dtype>

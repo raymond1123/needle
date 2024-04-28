@@ -11,5 +11,6 @@
 #include "ops/summation.cuh"
 #include "ops/slice.cuh"
 #include "ops/flip.cuh"
+#include "ops/matmul.cuh"
 
 #endif

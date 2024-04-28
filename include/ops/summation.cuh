@@ -73,6 +73,7 @@ public:
         // second reshape
         std::vector<int32_t> reshape_shape = _left_shape;
         reshape_shape.push_back(final_shape);
+
         std::shared_ptr<GenericOp<Dtype>> reshape_op =
             std::make_shared<ReshapeOp<Dtype>>(reshape_shape, OpType::Reshape);
         cached_data_type reshape_cache = reshape_op->compute({permute_cache});
@@ -122,8 +123,9 @@ protected:
     virtual inline cudaError_t _get_num_blocks() override {
         int dev, sm_count, tpm;
         cudaError err = __get_gpu_info(&dev, &sm_count, &tpm);
-        _num_blocks = std::max<int>(1, std::min<int64_t>((_n + kBlockSize - 1) / kBlockSize,
-                                               sm_count * tpm / kBlockSize * NUMWAVES));
+        //_num_blocks = std::max<int>(1, std::min<int64_t>((_n + kBlockSize - 1) / kBlockSize,
+        //                                      sm_count * tpm / kBlockSize * NUMWAVES));
+        _num_blocks = (_n+kBlockSize-1)/kBlockSize;
         return cudaSuccess;
     }
 

@@ -54,6 +54,8 @@ public:
                                           BackendType backend,
                                           bool op_on_self);
 
+    void from_buffer();
+
     /* getitem */
     Tensor operator[](std::vector<size_t> indices);
 
@@ -70,7 +72,7 @@ public:
     Tensor op_pow(Tensor& other);
     Tensor op_pow(const Dtype scalar);
 
-    //Tensor matmul(Tensor& A, Tensor& B);
+    Tensor matmul(Tensor& other);
     Tensor& operator+=(const Tensor& other);
 
     Tensor reshape(std::vector<int32_t> new_shape);
@@ -84,10 +86,8 @@ public:
     Tensor summation(std::vector<int> axes);
     Tensor summation();
 
-    /*
-    std::vector<Tensor> split(const Tensor& other, 
-                              std::vector<size_t> shape);
-    */
+    //std::vector<Tensor> split(const Tensor& other, 
+    //                          std::vector<int> axes);
 
     /* backward */
     void backward();
@@ -481,21 +481,18 @@ Tensor<Dtype> Tensor<Dtype>::op_pow(const Dtype scalar) {
     return (*op)(op, inputs, __backend);
 }
 
-/*
 template<typename Dtype>
-Tensor<Dtype> matmul(Tensor& A, Tensor& B) {
+Tensor<Dtype> Tensor<Dtype>::matmul(Tensor<Dtype>& other) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
-                                      OpType::EWPowScalar,
-                                      scalar);
+        std::make_shared<MatMulOp<Dtype>>(OpType::MatMul);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
-    printf("===============+\n");
+    inputs.push_back(other.__cached_data);
 
     return (*op)(op, inputs, __backend);
-}*/
+}
 
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::reshape(std::vector<int32_t> new_shape) {
@@ -594,20 +591,21 @@ Tensor<Dtype> Tensor<Dtype>::summation() {
 
 /*
 template<typename Dtype>
-Tensor<Dtype> std::vector<Tensor> split(const Tensor& other, 
-                                        std::vector<size_t> shape) {
+std::vector<Tensor<Dtype>> std::vector<Tensor> split(const Tensor& other, 
+                                                     std::vector<int> axes) {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<SummationOp<Dtype>>(OpType::Summation);
+        std::make_shared<SplitOp<Dtype>>(OpType::Split);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
     printf("===============+\n");
 
     return (*op)(op, inputs, __backend);
-
 }
+*/
 
+/*
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::operator[](std::vector<size_t> indices) {
 
@@ -657,6 +655,11 @@ Tensor<Dtype> Tensor<Dtype>::make_from_op(const std::shared_ptr<GenericOp<Dtype>
     new_t.__cached_data->inputs = inputs;
 
     return new_t;
+}
+
+template<typename Dtype>
+void Tensor<Dtype>::from_buffer() {
+    __cached_data->from_buffer();
 }
 
 template<typename Dtype>
