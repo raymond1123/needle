@@ -6,9 +6,6 @@
 template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;
 
-constexpr int kBlockSize = 256;
-#define NUMWAVES 32
-
 template<typename Dtype>
 class EWAddTensor {
 public:
@@ -335,6 +332,11 @@ public:
                                                        out2->cached_ptr(), 
                                                        out_grad->cached_ptr(), 
                                                        out2->cached_ptr());
+
+            ApplyEW<Dtype><<<_num_blocks, kBlockSize, 0>>>(OpType::EWMulScalar, _n,
+                                                       out2->cached_ptr(), 
+                                                       out2->cached_ptr(), 
+                                                       static_cast<Dtype>(-1));
             return {out1, out2};
 
         } else if(this->_op_type == OpType::EWDivScalar) {

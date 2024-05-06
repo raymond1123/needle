@@ -125,6 +125,7 @@ void bind_tensor(py::module &m, const char *name) {
         .def("reshape", &Tensor<Dtype>::reshape)
         .def("flip", &Tensor<Dtype>::flip)
         .def("__getitem__", &Tensor<Dtype>::slice)
+        .def("__setitem__", &Tensor<Dtype>::setitem)
         .def("broadcast_to", &Tensor<Dtype>::broadcast_to)
         .def("permute", &Tensor<Dtype>::permute)
         .def("transpose", &Tensor<Dtype>::transpose)

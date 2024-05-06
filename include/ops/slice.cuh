@@ -8,37 +8,6 @@ template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;
 
 template<typename Dtype>
-class EwSetitem {
-public:
-    __device__ void operator()(const Dtype* a, 
-                               Dtype* out,
-                               size_t size,
-                               CudaVec shape,
-                               CudaVec strides,
-                               size_t offset) {
-        size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-        size_t indices[MAX_VEC_SIZE];
-        get_index(tid, indices, shape);
-
-        size_t out_idx = offset;
-        for (int i=0; i<shape.size; ++i)
-          out_idx += indices[i]*strides.data[i];
-
-        if(tid<size)
-          out[out_idx] = a[tid];
-    }
-};
-
-template<typename Dtype>
-__global__ void __launch_bounds__(kBlockSize)
-ApplyEwSetitem(size_t n, const Dtype* a, Dtype* out, 
-           CudaVec shape, CudaVec strides, size_t offset) {
-    auto functor = EwSetitem<Dtype>();
-    functor(a, out, n, shape, strides, offset);
-}
-
-template<typename Dtype>
 class SliceOp: public GenericOp<Dtype> {
 protected:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
@@ -58,7 +27,6 @@ public:
         assert(inputs.size()==1 && "input number of SliceOp must be 1");
 
         __slice();
-
         cached_data_type cached_data = __create_cached_data(_new_shape,
                                                             inputs[0]->device(), false);
 
@@ -158,6 +126,7 @@ private:
             auto pos_slice = __process_slice(slices[i], _org_shape[i]);
             _pos_slices.push_back(pos_slice);
             _new_shape[i] = static_cast<size_t>(pos_slice[3]);
+            assert(_new_shape[i]>0 && "slice failed");
         }
 
         #ifdef DEBUG

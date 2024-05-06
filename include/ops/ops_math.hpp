@@ -12,5 +12,6 @@
 #include "ops/slice.cuh"
 #include "ops/flip.cuh"
 #include "ops/matmul.cuh"
+#include "ops/setitem.cuh"
 
 #endif

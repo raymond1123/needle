@@ -56,9 +56,6 @@ public:
 
     void from_buffer();
 
-    /* getitem */
-    Tensor operator[](std::vector<size_t> indices);
-
     /* operations */
     // element-wise addition
     Tensor operator+(Tensor& other);
@@ -78,9 +75,8 @@ public:
     Tensor reshape(std::vector<int32_t> new_shape);
     Tensor flip(std::vector<int> axes);
     Tensor broadcast_to(std::vector<int32_t> shape);
-    Tensor slice(std::vector<py::object> indices);
-    //void setitem(std::vector<py::object> rhs_indices,
-    //               const Tensor& other);
+    Tensor slice(std::vector<py::object> indices); /* getitem */
+    void setitem(std::vector<py::object> indices, Tensor& other);
     Tensor permute(std::vector<int> axes);
     Tensor transpose(std::vector<int> axes);
     Tensor summation(std::vector<int> axes);
@@ -605,13 +601,6 @@ std::vector<Tensor<Dtype>> std::vector<Tensor> split(const Tensor& other,
 }
 */
 
-/*
-template<typename Dtype>
-Tensor<Dtype> Tensor<Dtype>::operator[](std::vector<size_t> indices) {
-
-}
-*/
-
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::slice(std::vector<py::object> indices) {
     std::shared_ptr<GenericOp<Dtype>> op = 
@@ -625,22 +614,37 @@ Tensor<Dtype> Tensor<Dtype>::slice(std::vector<py::object> indices) {
     return (*op)(op, inputs, __backend);
 }
 
-/*
 template<typename Dtype>
-void Tensor<Dtype>::setitem(std::vector<py::object> rhs_indices,
-                   const Tensor& other) {
+void Tensor<Dtype>::setitem(std::vector<py::object> indices, Tensor& other) {
+
+    // move *this to tmp
+    cached_data_type tmp_cached_data = __cached_data;
 
     std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<SliceOp<Dtype>>(OpType::Slice, indices, 
-                                         shape(), strides(), offset());
+        std::make_shared<SetitemOp<Dtype>>(OpType::Setitem, indices);
 
     std::vector<cached_data_type> inputs;
-    inputs.push_back(__cached_data);
-    printf("===============+\n");
+    inputs.push_back(tmp_cached_data);
+    inputs.push_back(other.__cached_data);
 
-    (*op)(op, inputs, __backend);
+    // assign __cached_dat a new pointer
+    if (__backend == BackendType::CPU) {
+        __cached_data.reset(new CpuTensor<Dtype>(op, inputs));
+    } else if (__backend == BackendType::CUDA) {
+        __cached_data.reset(new CudaTensor<Dtype>(op, inputs));
+    } else {
+        throw std::runtime_error("Unsupported backend type.");
+    }
+
+    __cached_data = __cached_data->realized_cached_data();
+    __cached_data->op = op;
+    __cached_data->inputs = inputs;
+
+    #ifdef DEBUG
+    tensor_idx++;
+    __cached_data->tensor_idx = __tensor_idx;
+    #endif
 }
-*/
 
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::make_from_op(const std::shared_ptr<GenericOp<Dtype>> op,

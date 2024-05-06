@@ -28,7 +28,7 @@ public:
     virtual void ones()=0;
     virtual void from_buffer()=0;
     virtual BackendType device()=0;
-    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const=0;
+    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data()=0;
 
     inline std::vector<int32_t> shape() {return __shape;}
     inline std::vector<int32_t> strides() {return __strides;}

@@ -48,6 +48,7 @@ enum class MemCpyType: int {
 };
 
 enum class OpType: int {
+    LAEF=-1,
     EWAddTensor = 0,
     EWAddScalar = 1,
     EWMinusTensor = 2,
@@ -70,12 +71,13 @@ enum class OpType: int {
     Permute = 19,
     Summation = 20,
     Slice = 21,
-    Flip = 22,
-    Dilate = 23,
-    Undilate = 24,
-    Stack = 25,
-    Split = 26,
-    Conv = 27
+    Setitem = 22,
+    Flip = 23,
+    Dilate = 24,
+    Undilate = 25,
+    Stack = 26,
+    Split = 27,
+    Conv = 28
 };
 
 enum class DataType: int{

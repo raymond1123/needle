@@ -31,7 +31,7 @@ public:
     inline virtual size_t size() override {
         return this->_prod(this->__shape);
     }
-    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const override;
+    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() override;
     virtual inline BackendType device() override {return BackendType::CUDA;}
 
 protected:
@@ -73,6 +73,7 @@ void CudaTensor<Dtype>::ones() {
 
 template<typename Dtype>
 void CudaTensor<Dtype>::from_buffer() {
+    this->compact();
     // copy memory to host
     Dtype* host_ptr = (Dtype*)std::malloc(this->array->size() * sizeof(Dtype));
     if (host_ptr == 0) throw std::bad_alloc();
@@ -117,7 +118,8 @@ py::array_t<Dtype> CudaTensor<Dtype>::to_numpy() {
 }
 
 template<typename Dtype>
-std::shared_ptr<BaseTensor<Dtype>> CudaTensor<Dtype>::deep_cpy_cached_data() const {
+std::shared_ptr<BaseTensor<Dtype>> CudaTensor<Dtype>::deep_cpy_cached_data() {
+    this->compact();
     std::shared_ptr<BaseTensor<Dtype>> cached_data = 
         std::make_shared<CudaTensor<Dtype>>(this->__shape);
 

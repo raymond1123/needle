@@ -31,7 +31,7 @@ public:
     inline virtual size_t size() override {
         return this->_prod(this->__shape);
     }
-    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() const override;
+    virtual std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data() override;
 
     virtual inline BackendType device() override {return BackendType::CPU;} 
 
@@ -105,7 +105,8 @@ py::array_t<Dtype> CpuTensor<Dtype>::to_numpy() {
 }
 
 template<typename Dtype>
-std::shared_ptr<BaseTensor<Dtype>> CpuTensor<Dtype>::deep_cpy_cached_data() const {
+std::shared_ptr<BaseTensor<Dtype>> CpuTensor<Dtype>::deep_cpy_cached_data() {
+    this->compact();
     std::shared_ptr<BaseTensor<Dtype>> cached_data = 
         std::make_shared<CpuTensor<Dtype>>(this->__shape);
 

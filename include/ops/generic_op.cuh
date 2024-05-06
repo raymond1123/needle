@@ -2,6 +2,7 @@
 #define __GENERIC_OP__
 
 #include "common.hpp"
+#include "ops/ops_util.cuh"
 
 template<typename Dtype> class Tensor;
 template<typename Dtype> class BaseTensor;
@@ -77,9 +78,6 @@ public:
 
 #endif
 
-///* input two tensor; output one Tensor */
-//4.  template<Dtype> Tensor<Dtype> matmul(const Tensor<Dtype>& a, const Tensor<Dtype>& b);
-//
 ///* input one tensor; output one Tensor */
 //9.  template<Dtype> Tensor<Dtype> negate(const Tensor<Dtype>& a);
 //10. template<Dtype> Tensor<Dtype> log(const Tensor<Dtype>& a);
