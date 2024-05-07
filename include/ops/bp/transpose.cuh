@@ -2,7 +2,7 @@
 #define __TRANSPOSE_OP__
 
 #include "ops/generic_op.cuh"
-#include "ops/permute.cuh"
+#include "ops/bp/permute.cuh"
 
 template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;

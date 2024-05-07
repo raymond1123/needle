@@ -1,7 +1,6 @@
 #ifndef __TENSOR_HPP__
 #define __TENSOR_HPP__
 
-//#include <boost/type_index.hpp>
 #include "ops/ops_math.hpp"
 
 namespace py = pybind11;
@@ -81,6 +80,7 @@ public:
     Tensor transpose(std::vector<int> axes);
     Tensor summation(std::vector<int> axes);
     Tensor summation();
+    Tensor padding(std::vector<int> axes);
 
     //std::vector<Tensor> split(const Tensor& other, 
     //                          std::vector<int> axes);
@@ -577,6 +577,21 @@ Tensor<Dtype> Tensor<Dtype>::summation() {
 
     std::shared_ptr<GenericOp<Dtype>> op = 
         std::make_shared<SummationOp<Dtype>>(OpType::Summation);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+/*
+   The padding axes by which to pad some dimensions of input are described starting from the last dimension and moving forward (the same as pytorch)
+ */
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::padding(std::vector<int> axes) {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<PaddingOp<Dtype>>(axes, OpType::Padding);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);

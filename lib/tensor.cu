@@ -1,4 +1,5 @@
 #include "tensor.cuh"
+#include "nn/function.cuh"
 
 namespace py = pybind11;
 
@@ -115,7 +116,6 @@ void bind_tensor(py::module &m, const char *name) {
         .export_values();
 
     // Bind Tensor class
-    //py::class_<Tensor<Dtype>>(m, "Tensor", py::buffer_protocol());
     py::class_<Tensor<Dtype>> tensor_class(m, name);
     tensor_class
         .def(py::init<py::array_t<Dtype>&, BackendType>(),
@@ -163,11 +163,24 @@ void bind_tensor(py::module &m, const char *name) {
     bind_operator_iplus_tensor(tensor_class);
 }
 
-PYBIND11_MODULE(tensor, m) {
-    bind_tensor<float>(m, "Tensor");
+template<typename Dtype>
+void bind_functional(py::module &m) {
+    py::module nn = m.def_submodule("nn", "Neural network operations");
+    py::module functional = nn.def_submodule("functional", "Functions used in neural networks");
+    functional.def("ccc", &ccc);
+    functional.def("pad", &pad<Dtype>);
 
+}
+
+
+PYBIND11_MODULE(tensor, m) {
+    /* tensor */
+    bind_tensor<float>(m, "Tensor");
     m.def("ones", &ones<float>, py::arg("shape"), py::arg("backend"));
     m.def("zeros", &zeros<float>, py::arg("shape"), py::arg("backend"));
+
+    /* nn.functional */
+    bind_functional<float>(m);
 }
 
 /*

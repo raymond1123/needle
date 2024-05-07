@@ -2,9 +2,9 @@
 #define __MATMUL_OP__
 
 #include "ops/generic_op.cuh"
-#include "ops/reshape.cuh"
-#include "ops/broadcast.cuh"
-#include "ops/summation.cuh"
+#include "ops/bp/reshape.cuh"
+#include "ops/bp/broadcast.cuh"
+#include "ops/bp/summation.cuh"
 
 #define BASE_THREAD_NUM 256
 

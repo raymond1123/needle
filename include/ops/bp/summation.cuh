@@ -1,9 +1,9 @@
-#ifndef __PADDING__
-#define __PADDING__
+#ifndef __SUMMATION_OP__
+#define __SUMMATION_OP__
 
 #include "ops/generic_op.cuh"
-#include "ops/permute.cuh"
-#include "ops/broadcast.cuh"
+#include "ops/bp/permute.cuh"
+#include "ops/bp/broadcast.cuh"
 
 template<typename Dtype> class CpuTensor;
 template<typename Dtype> class CudaTensor;
@@ -38,15 +38,15 @@ ApplyRedSum(size_t n, size_t reduce_size, const Dtype* a, Dtype* sum) {
 }
 
 template<typename Dtype>
-class PaddingOp:
+class SummationOp: public GenericOp<Dtype> {
 protected:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
 public:
-    PaddingOp(std::vector<int> axes):
+    SummationOp(std::vector<int> axes, OpType op_type):
         GenericOp<Dtype>(op_type), _axes(axes), _num_blocks(0) {}
 
-    PaddingOp(OpType op_type): GenericOp<Dtype>(op_type), _num_blocks(0) {}
+    SummationOp(OpType op_type): GenericOp<Dtype>(op_type), _num_blocks(0) {}
 
     virtual cached_data_type compute(std::vector<cached_data_type> inputs) override {
 
@@ -96,6 +96,27 @@ public:
         cached_data->is_compact = true;
 
         return cached_data;
+    }
+
+    virtual std::vector<cached_data_type> gradient(cached_data_type out_grad, 
+                                                   cached_data_type tensor) override {
+        auto inputs = tensor->inputs;
+        std::vector<int32_t> input_shape = inputs[0]->shape();
+        std::vector<int32_t> reshape_shape = input_shape;
+
+        for(auto& axis: _axes)
+            reshape_shape[axis] = 1;
+
+        std::shared_ptr<GenericOp<Dtype>> reshape_op =
+            std::make_shared<ReshapeOp<Dtype>>(reshape_shape, OpType::Reshape);
+        cached_data_type reshape_cache = reshape_op->compute({out_grad});
+
+        std::shared_ptr<GenericOp<Dtype>> broadcast_op = 
+            std::make_shared<BroadcastOp<Dtype>>(input_shape, OpType::BroadcastTo);
+        cached_data_type out_cache = broadcast_op->compute({reshape_cache});
+        out_cache->compact(); // compact here before reduced add
+
+        return {out_cache};
     }
 
 protected:

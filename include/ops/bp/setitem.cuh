@@ -2,7 +2,7 @@
 #define __SETITEM_OP__
 
 #include "ops/generic_op.cuh"
-#include "ops/slice.cuh"
+#include "ops/bp/slice.cuh"
 #include "backend/cuda_util.cuh"
 
 template<typename Dtype> class CpuTensor;
