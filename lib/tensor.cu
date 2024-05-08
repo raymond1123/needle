@@ -1,17 +1,8 @@
 #include "tensor.cuh"
+#include "needle_util.cuh"
 #include "nn/function.cuh"
 
 namespace py = pybind11;
-
-template<typename Dtype>
-Tensor<Dtype> ones(std::vector<int32_t> shape, BackendType backend) {
-    return Tensor<Dtype>::ones(shape, backend);
-}
-
-template<typename Dtype>
-Tensor<Dtype> zeros(std::vector<int32_t> shape, BackendType backend) {
-    return Tensor<Dtype>::zeros(shape, backend);
-}
 
 template<typename Dtype>
 void bind_operator_iplus_tensor(py::class_<Tensor<Dtype>>& tensor_class) {
@@ -169,15 +160,16 @@ void bind_functional(py::module &m) {
     py::module functional = nn.def_submodule("functional", "Functions used in neural networks");
     functional.def("ccc", &ccc);
     functional.def("pad", &pad<Dtype>);
-
 }
-
 
 PYBIND11_MODULE(tensor, m) {
     /* tensor */
     bind_tensor<float>(m, "Tensor");
+
     m.def("ones", &ones<float>, py::arg("shape"), py::arg("backend"));
     m.def("zeros", &zeros<float>, py::arg("shape"), py::arg("backend"));
+    m.def("stack", &stack<float>, py::arg("inputs"), py::arg("dim")=0);
+    m.def("split", &split<float>, py::arg("input"), py::arg("dim")=0);
 
     /* nn.functional */
     bind_functional<float>(m);

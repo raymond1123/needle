@@ -128,7 +128,6 @@ private:
     std::vector<int32_t> _axes;
     size_t _n;
     int _num_blocks;
-    //std::vector<py::slice> _slices;
     std::vector<py::object> _slices;
 };
 

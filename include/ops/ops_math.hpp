@@ -14,5 +14,7 @@
 #include "ops/bp/matmul.cuh"
 #include "ops/bp/setitem.cuh"
 #include "ops/bp/padding.cuh"
+#include "ops/bp/stack.cuh"
+#include "ops/bp/split.cuh"
 
 #endif

@@ -23,19 +23,20 @@ public:
 
     /* move/cpy constructor */
     Tensor(Tensor&& other) noexcept;
-    Tensor(Tensor& other);
+    Tensor(const Tensor& other);
 
     /* move/cpy operator= */
     Tensor& operator=(Tensor&& other) noexcept;
     Tensor& operator=(Tensor& other);
     std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data();
 
+    inline cached_data_type cached_data() { return __cached_data; }
     inline py::array_t<Dtype> to_numpy() { return __cached_data->to_numpy(); }
     inline py::array_t<Dtype> grad() { return __cached_data->grad->to_numpy(); }
     inline std::vector<int32_t> shape() { return __cached_data->shape(); }
     inline std::vector<int32_t> strides() { return __cached_data->strides(); }
     inline size_t offset() { return __cached_data->offset(); }
-    inline BackendType device() {return __backend;}
+    inline BackendType device() const {return __backend;}
     virtual inline size_t size() {return __cached_data->size();};
 
     inline Dtype* cached_ptr() {return __cached_data->cached_ptr();}
@@ -52,6 +53,9 @@ public:
                                           std::vector<cached_data_type>& inputs,
                                           BackendType backend,
                                           bool op_on_self);
+
+    void realized_cached_data(const std::shared_ptr<GenericOp<Dtype>> op,
+                              std::vector<cached_data_type>& inputs);
 
     void from_buffer();
 
@@ -81,9 +85,6 @@ public:
     Tensor summation(std::vector<int> axes);
     Tensor summation();
     Tensor padding(std::vector<int> axes);
-
-    //std::vector<Tensor> split(const Tensor& other, 
-    //                          std::vector<int> axes);
 
     /* backward */
     void backward();
@@ -214,13 +215,7 @@ Tensor<Dtype>::Tensor(Tensor&& other) noexcept:
         __tensor_idx(other.__tensor_idx), __backend(other.__backend), 
         __cached_data(other.__cached_data) {
 
-    /*
-    other.__cached_data->op = nullptr;
-    for(auto& input: other.__cached_data->inputs)
-        input = nullptr;
-    */
-
-    other.__cached_data = nullptr;
+    //other.__cached_data = nullptr;
 
     __cached_data->tensor_idx = __tensor_idx;
     #ifdef DEBUG
@@ -240,7 +235,7 @@ Tensor<Dtype>& Tensor<Dtype>::operator=(Tensor<Dtype>&& other) noexcept {
     __cached_data = other.__cached_data;
     __cached_data->tensor_idx = __tensor_idx;
 
-    other.__cached_data->_op = nullptr;
+    other.__cached_data->op = nullptr;
     for(auto& input: other.__cached_data->inputs)
         input = nullptr;
     other.__cached_data = nullptr;
@@ -253,11 +248,17 @@ Tensor<Dtype>& Tensor<Dtype>::operator=(Tensor<Dtype>&& other) noexcept {
 }
 
 template<typename Dtype>
-Tensor<Dtype>::Tensor(Tensor& other): __backend(other.__backend) {
-
+Tensor<Dtype>::Tensor(const Tensor& other): 
+    __cached_data(other.__cached_data), __backend(other.__backend) {
+    /*
     __cached_data = other.__cached_data->deep_cpy_cached_data();
     __cached_data->op = other.__cached_data->op;
     __cached_data->inputs = other.__cached_data->inputs;
+    __cached_data->grad = other.__cached_data->grad;
+    __cached_data->cached = other.__cached_data->cached;
+    __cached_data->is_compact = other.__cached_data->is_compact;
+    __cached_data->tensor_idx = other.__cached_data->tensor_idx;
+    */
 
     #ifdef DEBUG
     tensor_idx++;
@@ -600,22 +601,6 @@ Tensor<Dtype> Tensor<Dtype>::padding(std::vector<int> axes) {
     return (*op)(op, inputs, __backend);
 }
 
-/*
-template<typename Dtype>
-std::vector<Tensor<Dtype>> std::vector<Tensor> split(const Tensor& other, 
-                                                     std::vector<int> axes) {
-
-    std::shared_ptr<GenericOp<Dtype>> op = 
-        std::make_shared<SplitOp<Dtype>>(OpType::Split);
-
-    std::vector<cached_data_type> inputs;
-    inputs.push_back(__cached_data);
-    printf("===============+\n");
-
-    return (*op)(op, inputs, __backend);
-}
-*/
-
 template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::slice(std::vector<py::object> indices) {
     std::shared_ptr<GenericOp<Dtype>> op = 
@@ -665,6 +650,7 @@ template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::make_from_op(const std::shared_ptr<GenericOp<Dtype>> op,
                                           std::vector<cached_data_type>& inputs,
                                           BackendType backend) {
+
     assert(inputs.size() > 0 && "number of inputs is zero");
 
     Tensor<Dtype> new_t = Tensor<Dtype>(backend, op, inputs);
@@ -674,6 +660,15 @@ Tensor<Dtype> Tensor<Dtype>::make_from_op(const std::shared_ptr<GenericOp<Dtype>
     new_t.__cached_data->inputs = inputs;
 
     return new_t;
+}
+
+template<typename Dtype>
+void Tensor<Dtype>::realized_cached_data(const std::shared_ptr<GenericOp<Dtype>> op,
+                               std::vector<std::shared_ptr<BaseTensor<Dtype>>>& inputs) {
+
+    __cached_data = __cached_data->realized_cached_data();
+    __cached_data->op = op;
+    __cached_data->inputs = inputs;
 }
 
 template<typename Dtype>
@@ -687,6 +682,7 @@ std::shared_ptr<BaseTensor<Dtype>> Tensor<Dtype>::make_from_op_on_self(
                             std::vector<cached_data_type>& inputs,
                             BackendType backend,
                             bool op_on_self) {
+
     assert(inputs.size() > 0 && "number of inputs is zero");
     cached_data_type cached_data = nullptr;
 
@@ -754,10 +750,11 @@ void Tensor<Dtype>::__compute_gradient(cached_data_type out_tensor,
     #endif
 
     for(auto& tensor: reverse_topo_order) {
-        tensor->grad = __sum_grad(grad_map[tensor]);
 
+        tensor->grad = __sum_grad(grad_map[tensor]);
         if(tensor->op!=nullptr) {
             std::vector<cached_data_type> grads;
+
             grads = tensor->op->gradient(tensor->grad, tensor);
 
             for(int i=0; i<tensor->inputs.size(); ++i) {
