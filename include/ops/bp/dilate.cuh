@@ -24,7 +24,7 @@ public:
         __calc_new_shape(inputs[0]->shape());
 
         cached_data_type cached_out = __create_cached_data(_new_shape,
-                                                            inputs[0]->device());
+                                                           inputs[0]->device());
         cached_out->zeros();
 
         std::shared_ptr<GenericOp<Dtype>> slice_op = 
@@ -39,7 +39,6 @@ public:
         for(int i=0; i<view->shape().size(); ++i) 
             assert(view->shape()[i]==inputs[0]->shape()[i] && "slice in dilate failed");
 
-        //_n = cached_out->size();
         _n = view->size();
         cudaError_t err = this->_get_num_blocks();
         assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
@@ -60,7 +59,22 @@ public:
                             cached_data_type out_grad, 
                             cached_data_type tensor) override {
 
-        return {out_grad};
+        std::shared_ptr<GenericOp<Dtype>> slice_op = 
+            std::make_shared<SliceOp<Dtype>>(OpType::Slice, _slices, 
+                                             out_grad->shape(), 
+                                             out_grad->strides(), 
+                                             out_grad->offset());
+        /*
+        for(auto& l: _slices)
+            printf("llllllll: %d,%d,%d\n", int(py::int_(l.attr("start"))),
+                                           int(py::int_(l.attr("stop"))),
+                                           int(py::int_(l.attr("step"))));
+        */
+
+        auto cached_out = slice_op->compute({out_grad});
+        cached_out->compact();
+
+        return {cached_out};
     }
 
 private:
