@@ -16,5 +16,6 @@
 #include "ops/bp/padding.cuh"
 #include "ops/bp/stack.cuh"
 #include "ops/bp/split.cuh"
+#include "ops/bp/dilate.cuh"
 
 #endif

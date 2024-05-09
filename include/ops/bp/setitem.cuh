@@ -26,7 +26,7 @@ public:
         inputs[1]->compact();
 
         auto out_cached = inputs[0]->deep_cpy_cached_data();
-        _n = out_cached->size();
+        //_n = out_cached->size();
 
         std::shared_ptr<GenericOp<Dtype>> slice_op = 
             std::make_shared<SliceOp<Dtype>>(OpType::Slice, _indices, 
@@ -35,6 +35,8 @@ public:
                                              out_cached->offset());
 
         auto view = slice_op->compute({out_cached});
+
+        _n = view->size();
         cudaError_t err = this->_get_num_blocks();
         assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
 

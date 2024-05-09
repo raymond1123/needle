@@ -85,6 +85,8 @@ public:
     Tensor summation(std::vector<int> axes);
     Tensor summation();
     Tensor padding(std::vector<int> axes);
+    //Tensor dilate(std::vector<int> axes, uint32_t dilation);
+    Tensor dilate(uint32_t dilation, std::vector<int> axes);
 
     /* backward */
     void backward();
@@ -593,6 +595,18 @@ template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::padding(std::vector<int> axes) {
     std::shared_ptr<GenericOp<Dtype>> op = 
         std::make_shared<PaddingOp<Dtype>>(axes, OpType::Padding);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::dilate(uint32_t dilation, std::vector<int> axes) {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<DilateOp<Dtype>>(OpType::Dilate, axes, dilation);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);

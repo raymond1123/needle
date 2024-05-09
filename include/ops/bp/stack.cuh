@@ -30,10 +30,6 @@ public:
         __calc_new_shape(inputs.size(), shape_length, concated_dim);
         cached_data_type cached_out = __create_cached_data(_new_shape,
                                                            inputs[0]->device());
-        _n = cached_out->size();
-        cudaError_t err = this->_get_num_blocks();
-        assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
-
         for(int i=0; i<inputs.size(); ++i)
             __stack_single_tensor(cached_out, inputs[i], i, concated_dim);
 
@@ -90,6 +86,10 @@ private:
 
         auto view = slice_op->compute({cached_out});
 
+        _n = view->size();
+        cudaError_t err = this->_get_num_blocks();
+        assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
+
         ApplyEwSetitem<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n,
                                                   input->cached_ptr(), 
                                                   view->cached_ptr(), // out
@@ -97,7 +97,7 @@ private:
                                                   VecToCuda(view->strides()), 
                                                   view->offset());
 
-        cudaError_t err = cudaPeekAtLastError();
+        err = cudaPeekAtLastError();
         assert(err==cudaSuccess && "ApplyEwSetitem failed");
     }
 

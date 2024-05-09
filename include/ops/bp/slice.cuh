@@ -45,7 +45,7 @@ public:
                                                    cached_data_type tensor) override {
         cached_data_type out_cached = __create_cached_data(_org_shape,
                                                            out_grad->device());
-        _n = out_cached->size();
+        //_n = out_cached->size();
         out_cached->zeros();
 
         std::shared_ptr<GenericOp<Dtype>> slice_op = 
@@ -56,6 +56,7 @@ public:
 
         auto view = slice_op->compute({out_cached});
 
+        _n = view->size();
         cudaError_t err = this->_get_num_blocks();
         assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
 

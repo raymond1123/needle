@@ -74,13 +74,17 @@ public:
 
         auto view = slice_op->compute({out_grad});
 
+        _n = cached_out->size();
+        cudaError_t err = this->_get_num_blocks();
+        assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
+
         ApplyEwSetitem<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n,
                                                   view->cached_ptr(), 
                                                   cached_out->cached_ptr(), // out
                                                   VecToCuda(cached_out->shape()), 
                                                   VecToCuda(cached_out->strides()), 
                                                   cached_out->offset());
-        cudaError_t err = cudaPeekAtLastError();
+        err = cudaPeekAtLastError();
         assert(err==cudaSuccess && "ApplyEwSetitem failed");
 
         return {cached_out};

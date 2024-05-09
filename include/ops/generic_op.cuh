@@ -41,30 +41,6 @@ public:
     OpType _op_type;
 };
 
-/* currently, only for split operator */
-template<typename Dtype>
-class TupleGenericOp {
-public:
-    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
-
-public:
-    TupleGenericOp(OpType op_type):_op_type(op_type) {};
-
-    virtual std::vector<cached_data_type> compute(cached_data_type inputs)=0;
-
-    virtual std::vector<cached_data_type> gradient(
-                            cached_data_type out_grad, 
-                            cached_data_type tensor)=0;
-
-    inline int op_type() {return static_cast<int>(_op_type);}
-
-protected:
-    virtual inline cudaError_t _get_num_blocks()=0;
-public:
-    OpType _op_type;
-};
-
-
 #endif
 
 ///* input one tensor; output one Tensor */
@@ -78,17 +54,9 @@ public:
 //19. template<Dtype> Tensor<Dtype> dilate(const Tensor<Dtype>& a, const std::vector<int>& axes, const int dilation);
 //20. template<Dtype> Tensor<Dtype> undilate(const Tensor<Dtype>& a, const std::vector<int>& axes, const int dilation);
 //
-///* input un-fixed number of tensors and a vector; output one Tensor */
-//21. template<Dtype> Tensor<Dtype> stack(const std::vector<Tensor<Dtype>>, const std::vector<int>& axis);
-//
-///* input one tensor and a vector; output un-fixed number of tensors */
-//22. template<Dtype> std::vector<Tensor<Dtype>> split(const Tensor<Dtype>& a, const std::vector<int>& axis);
-//
 ///* input two tensor and two int; output one Tensor */
 //23. template<Dtype> Tensor<Dtype> conv(const Tensor<Dtype>& a, 
 //                                  const Tensor<Dtype>& b, 
 //                                  const int stride=1, 
 //                                  const int padding=1);
-
-
 

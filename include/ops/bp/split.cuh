@@ -46,10 +46,6 @@ public:
         cached_data_type cached_out = __create_cached_data(_org_shape,
                                                            out_grad->device());
         cached_out->zeros();
-        _n = cached_out->size();
-        cudaError_t err = this->_get_num_blocks();
-        assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
-
         std::vector<py::object> indices;
 
         int split_idx=0;
@@ -69,6 +65,10 @@ public:
 
         auto view = slice_op->compute({cached_out});
         //view->compact();
+
+        _n = view->size();
+        cudaError_t err = this->_get_num_blocks();
+        assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
 
         ApplyEwSetitem<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n,
                                                   out_grad->cached_ptr(), 
@@ -118,6 +118,10 @@ private:
         auto view = slice_op->compute({input});
         view->compact();
 
+        _n = cached_out->size();
+        cudaError_t err = this->_get_num_blocks();
+        assert(err==cudaSuccess && "get_num_blocks in SliceOp failed");
+
         ApplyEwSetitem<Dtype><<<_num_blocks, kBlockSize, 0>>>(_n,
                                                   view->cached_ptr(), 
                                                   cached_out->cached_ptr(), // out
@@ -125,7 +129,7 @@ private:
                                                   VecToCuda(cached_out->strides()), 
                                                   cached_out->offset());
 
-        cudaError_t err = cudaPeekAtLastError();
+        err = cudaPeekAtLastError();
         assert(err==cudaSuccess && "ApplyEwSetitem failed");
     }
 
