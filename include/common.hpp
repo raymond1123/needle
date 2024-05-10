@@ -25,6 +25,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <thread>

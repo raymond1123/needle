@@ -1,3 +1,6 @@
+#ifndef __FUNCTIONAL_CUH__
+#define __FUNCTIONAL_CUH__
+
 #include "tensor.cuh"
 #include "ops/bp/padding.cuh"
 
@@ -12,4 +15,6 @@ template<typename Dtype>
 Tensor<Dtype> pad(Tensor<Dtype>& tensor, std::vector<int32_t> axes) {
     return tensor.padding(axes);
 }
+
+#endif
 

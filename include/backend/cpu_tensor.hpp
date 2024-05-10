@@ -24,6 +24,7 @@ public:
     CpuTensor& operator=(const CpuTensor&)=delete;
 
     virtual py::array_t<Dtype> to_numpy() override;
+    virtual void fill_val(Dtype val) override;
     virtual void zeros() override;
     virtual void ones() override;
     virtual void from_buffer() override;
@@ -62,6 +63,11 @@ CpuTensor<Dtype>::CpuTensor(const std::vector<int32_t>& shape,
         this->array.reset(new CpuArray<Dtype>(size));
 
     std::cout << "selected cpu backend" << std::endl;
+}
+
+template<typename Dtype>
+void CpuTensor<Dtype>::fill_val(Dtype val) {
+    this->array->fill_val(val);
 }
 
 template<typename Dtype>

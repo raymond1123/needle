@@ -24,6 +24,7 @@ public:
 
     virtual py::array_t<Dtype> to_numpy()=0;
     virtual inline size_t size()=0;
+    virtual void fill_val(Dtype val)=0;
     virtual void zeros()=0;
     virtual void ones()=0;
     virtual void from_buffer()=0;

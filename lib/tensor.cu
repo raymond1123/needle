@@ -1,6 +1,8 @@
 #include "tensor.cuh"
 #include "needle_util.cuh"
 #include "nn/function.cuh"
+#include "init/init_basic.cuh"
+#include "init/initial.cuh"
 
 namespace py = pybind11;
 
@@ -163,17 +165,64 @@ void bind_functional(py::module &m) {
     functional.def("pad", &pad<Dtype>);
 }
 
+template<typename Dtype>
+void bind_init(py::module &m) {
+    m.def("rand", &rand<Dtype>, 
+          py::arg("shape"), py::arg("min")=0.0, 
+          py::arg("max")=1.0, py::arg("device")=BackendType::CUDA,
+          "Generate uniformly distributed random tensor");
+
+    m.def("randn", &randn<Dtype>, 
+          py::arg("shape"), py::arg("mean")=0.0, 
+          py::arg("std")=1.0, py::arg("device")=BackendType::CUDA, 
+          "Generate Gaussian distributed random tensor");
+
+    m.def("randb", &randb<Dtype>, 
+          py::arg("shape"), py::arg("p")=0.5, 
+          py::arg("device")=BackendType::CUDA, 
+          "Generate binary random tensor");
+
+    m.def("ones", &ones<Dtype>, py::arg("shape"), py::arg("device")=BackendType::CUDA);
+    m.def("zeros", &zeros<Dtype>, py::arg("shape"), py::arg("device")=BackendType::CUDA);
+    m.def("ones_like", &ones_like<Dtype>, py::arg("input"));
+    m.def("zeros_like", &zeros_like<Dtype>, py::arg("input"));
+
+    m.def("constant", &constant<Dtype>, py::arg("shape"), py::arg("val"),
+                                        py::arg("device")=BackendType::CUDA);
+    m.def("one_hot", &one_hot<Dtype>, py::arg("size"), py::arg("idx"),
+                                    py::arg("device")=BackendType::CUDA);
+
+    m.def("xavier_uniform", &xavier_uniform<Dtype>, 
+          py::arg("shape"), py::arg("gain")=1.0,
+          py::arg("device")=BackendType::CUDA);
+
+    m.def("xavier_normal", &xavier_normal<Dtype>, 
+          py::arg("shape"), py::arg("gain")=1.0,
+          py::arg("device")=BackendType::CUDA);
+
+    m.def("kaiming_uniform", &kaiming_uniform<Dtype>, 
+          py::arg("shape"), 
+          py::arg("device")=BackendType::CUDA,
+          py::arg("nonlinearity")="relu");
+
+    m.def("kaiming_normal", &kaiming_normal<Dtype>, 
+          py::arg("shape"), 
+          py::arg("device")=BackendType::CUDA,
+          py::arg("nonlinearity")="relu");
+}
+
 PYBIND11_MODULE(tensor, m) {
     /* tensor */
     bind_tensor<float>(m, "Tensor");
 
-    m.def("ones", &ones<float>, py::arg("shape"), py::arg("backend"));
-    m.def("zeros", &zeros<float>, py::arg("shape"), py::arg("backend"));
     m.def("stack", &stack<float>, py::arg("inputs"), py::arg("dim")=0);
     m.def("split", &split<float>, py::arg("input"), py::arg("dim")=0);
 
     /* nn.functional */
     bind_functional<float>(m);
+
+    /* nn.init */
+    bind_init<float>(m);
 }
 
 /*

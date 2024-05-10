@@ -18,6 +18,8 @@ public:
            std::shared_ptr<GenericOp<Dtype>> op=nullptr,
            std::vector<cached_data_type> inputs={nullptr});
 
+    static Tensor fill_val(std::vector<int32_t> shape, Dtype val, 
+                           BackendType backend);
     static Tensor ones(std::vector<int32_t> shape, BackendType backend);
     static Tensor zeros(std::vector<int32_t> shape, BackendType backend);
 
@@ -207,6 +209,33 @@ Tensor<Dtype> Tensor<Dtype>::zeros(std::vector<int32_t> shape,
     tensor.__tensor_idx = tensor_idx;
     tensor.__cached_data->tensor_idx = tensor.__tensor_idx;
     //tensor.__print_tensor_info("zeros");
+    #endif
+
+    return tensor;
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::fill_val(std::vector<int32_t> shape, 
+                                      Dtype val, 
+                                      BackendType backend) {
+
+    Tensor<Dtype> tensor = Tensor<Dtype>(backend);
+
+    if (backend == BackendType::CPU) {
+        tensor.__cached_data = std::make_shared<CpuTensor<Dtype>>(shape);
+    } else if (backend == BackendType::CUDA) {
+        tensor.__cached_data = std::make_shared<CudaTensor<Dtype>>(shape);
+    } else {
+        throw std::runtime_error("Unsupported backend type.");
+    }
+
+    tensor.__cached_data->fill_val(val);
+    tensor.__cached_data->cached = true;
+
+    #ifdef DEBUG
+    tensor_idx++;
+    tensor.__tensor_idx = tensor_idx;
+    tensor.__cached_data->tensor_idx = tensor.__tensor_idx;
     #endif
 
     return tensor;

@@ -7,16 +7,6 @@
 #include "backend/base_tensor.hpp"
 
 template<typename Dtype>
-Tensor<Dtype> ones(std::vector<int32_t> shape, BackendType backend) {
-    return Tensor<Dtype>::ones(shape, backend);
-}
-
-template<typename Dtype>
-Tensor<Dtype> zeros(std::vector<int32_t> shape, BackendType backend) {
-    return Tensor<Dtype>::zeros(shape, backend);
-}
-
-template<typename Dtype>
 Tensor<Dtype> stack(std::vector<Tensor<Dtype>>& inputs, int dim=0) {
 
     std::shared_ptr<GenericOp<Dtype>> stack_op = 

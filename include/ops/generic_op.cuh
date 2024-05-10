@@ -50,10 +50,6 @@ public:
 //12. template<Dtype> Tensor<Dtype> relu(const Tensor<Dtype>& a);
 //13. template<Dtype> Tensor<Dtype> tanh(const Tensor<Dtype>& a);
 //
-///* input one tensor and two vector; output one Tensor */
-//19. template<Dtype> Tensor<Dtype> dilate(const Tensor<Dtype>& a, const std::vector<int>& axes, const int dilation);
-//20. template<Dtype> Tensor<Dtype> undilate(const Tensor<Dtype>& a, const std::vector<int>& axes, const int dilation);
-//
 ///* input two tensor and two int; output one Tensor */
 //23. template<Dtype> Tensor<Dtype> conv(const Tensor<Dtype>& a, 
 //                                  const Tensor<Dtype>& b, 

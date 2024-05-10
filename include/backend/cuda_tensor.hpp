@@ -24,6 +24,7 @@ public:
     CudaTensor& operator=(const CudaTensor&)=delete;
 
     virtual py::array_t<Dtype> to_numpy() override;
+    virtual void fill_val(Dtype val) override;
     virtual void zeros() override;
     virtual void ones() override;
     virtual void from_buffer() override;
@@ -55,6 +56,13 @@ CudaTensor<Dtype>::CudaTensor(const std::vector<int32_t>& shape,
     this->array.reset(new CudaArray<Dtype>(size, create_cache));
 
     std::cout << "selected cuda backend 2, " << create_cache << std::endl;
+}
+
+template<typename Dtype>
+void CudaTensor<Dtype>::fill_val(Dtype val) {
+    this->array->fill_val(val);
+    this->is_compact = true;
+    this->cached = true;
 }
 
 template<typename Dtype>
