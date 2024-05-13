@@ -1,6 +1,7 @@
 #include "tensor.cuh"
 #include "needle_util.cuh"
 #include "nn/function.cuh"
+#include "nn/nn_basic.cuh"
 #include "init/init_basic.cuh"
 #include "init/initial.cuh"
 
@@ -162,6 +163,7 @@ void bind_functional(py::module &m) {
     py::module nn = m.def_submodule("nn", "Neural network operations");
     py::module functional = nn.def_submodule("functional", "Functions used in neural networks");
     functional.def("ccc", &ccc);
+    functional.def("ddd", &ddd);
     functional.def("pad", &pad<Dtype>);
 }
 
@@ -211,6 +213,32 @@ void bind_init(py::module &m) {
           py::arg("nonlinearity")="relu");
 }
 
+template<typename Dtype>
+void bind_module(py::module &m) {
+    py::module nn = m.def_submodule("nn", "Neural network operations");
+
+    //std::vector<std::shared_ptr<Module<Dtype>>> Module<Dtype>::_modules;
+    py::class_<Module<Dtype>, std::shared_ptr<Module<Dtype>>>(nn, "Module")
+       .def(py::init<>())
+       .def(py::init<std::vector<std::shared_ptr<Module<Dtype>>> &>())
+       .def("__call__", &Module<Dtype>::operator())
+       .def("train", &Module<Dtype>::train)
+       .def("eval", &Module<Dtype>::eval)
+       .def("forward", &Module<Dtype>::forward);
+
+    py::class_<Sequential<Dtype>, Module<Dtype>, 
+                std::shared_ptr<Sequential<Dtype>>>(nn, "Sequential")
+        .def(py::init<std::vector<std::shared_ptr<Module<Dtype>>> &>())
+        .def("forward", &Sequential<Dtype>::forward);
+
+    py::class_<Linear<Dtype>, Module<Dtype>, 
+                std::shared_ptr<Linear<Dtype>>>(nn, "Linear")
+        .def(py::init<int, int>())
+        .def("forward", &Linear<Dtype>::forward);
+
+}
+
+
 PYBIND11_MODULE(tensor, m) {
     /* tensor */
     bind_tensor<float>(m, "Tensor");
@@ -223,6 +251,9 @@ PYBIND11_MODULE(tensor, m) {
 
     /* nn.init */
     bind_init<float>(m);
+
+    /* nn.module */
+    bind_module<float>(m);
 }
 
 /*

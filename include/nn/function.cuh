@@ -7,8 +7,14 @@
 template<typename Dtype>
 using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
-void ccc() {
-    std::cout << "ccc function" << std::endl;
+std::vector<int> ccc() {
+    std::vector<int> out = {1,2,3,4,5};
+    return out;
+}
+
+std::vector<int> ddd() {
+    std::vector<int> out = {1};
+    return out;
 }
 
 template<typename Dtype>

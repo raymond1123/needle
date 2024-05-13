@@ -29,7 +29,7 @@ public:
 
     /* move/cpy operator= */
     Tensor& operator=(Tensor&& other) noexcept;
-    Tensor& operator=(Tensor& other);
+    Tensor& operator=(const Tensor& other);
     std::shared_ptr<BaseTensor<Dtype>> deep_cpy_cached_data();
 
     inline cached_data_type cached_data() { return __cached_data; }
@@ -301,15 +301,15 @@ Tensor<Dtype>::Tensor(const Tensor& other):
 }
 
 template<typename Dtype>
-Tensor<Dtype>& Tensor<Dtype>::operator=(Tensor<Dtype>& other) {
+Tensor<Dtype>& Tensor<Dtype>::operator=(const Tensor<Dtype>& other) {
     if(this==&other) return *this;
 
     __backend = other.__backend;
 
-    __cached_data = other.__cached_data->deep_cpy_cached_data();
-    __cached_data->op = other.__cached_data->_op;
-    __cached_data->inputs = other.__cached_data->inputs;
-
+    //__cached_data = other.__cached_data->deep_cpy_cached_data();
+    //__cached_data->op = other.__cached_data->op;
+    //__cached_data->inputs = other.__cached_data->inputs;
+    __cached_data = other.__cached_data;
 
     #ifdef DEBUG
     tensor_idx++;
