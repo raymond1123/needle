@@ -30,6 +30,31 @@ py::array_t<Dtype> _generate_uniform(std::vector<int32_t>& shape,
         ptr[i] = dist(rng);
     }
 
+    result.resize(shape);
+    return result;
+}
+
+template<typename Dtype>
+py::array_t<Dtype> _generate_normal(std::vector<int32_t> shape, 
+                   Dtype mean=static_cast<Dtype>(0.0), 
+                   Dtype std=static_cast<Dtype>(1.0)) {
+    size_t size=1;
+    for(auto& s: shape)
+        size *= s;
+
+    // Initialize a random number generator
+    std::mt19937 rng(std::random_device{}());
+    std::normal_distribution<Dtype> dist(mean, std);
+
+    // Create a buffer to hold the random numbers
+    auto result = py::array_t<Dtype>(size);
+
+    auto ptr = result.mutable_data();
+    for (int i = 0; i < size; ++i) {
+        ptr[i] = dist(rng);
+    }
+
+    result.resize(shape);
     return result;
 }
 
@@ -55,6 +80,7 @@ py::array_t<Dtype> _generate_randb(std::vector<int32_t>& shape,
         else ptr[i] = static_cast<Dtype>(0.0);
     }
 
+    result.resize(shape);
     return result;
 }
 
@@ -69,7 +95,21 @@ Tensor<Dtype> rand(std::vector<int32_t> shape,
     auto result = _generate_uniform<Dtype>(shape, max, min);
     auto tensor = Tensor<Dtype>(result, device);
 
-    return tensor.reshape(shape);
+    return tensor;
+}
+
+// Generate uniformly distributed random numbers
+template<typename Dtype>
+std::shared_ptr<Tensor<Dtype>> rand_shptr(std::vector<int32_t> shape, 
+                   Dtype min=static_cast<Dtype>(0.0), 
+                   Dtype max=static_cast<Dtype>(1.0),
+                   BackendType device=BackendType::CUDA) {
+
+    auto result = _generate_uniform<Dtype>(shape, max, min);
+    std::shared_ptr<Tensor<Dtype>> tensor = 
+        std::make_shared<Tensor<Dtype>>(new Tensor<Dtype>(result, device));
+
+    return tensor;
 }
 
 // Generate Gaussian distributed random numbers
@@ -79,24 +119,22 @@ Tensor<Dtype> randn(std::vector<int32_t> shape,
                    Dtype std=static_cast<Dtype>(1.0),
                    BackendType device=BackendType::CUDA) {
 
-    size_t size=1;
-    for(auto& s: shape)
-        size *= s;
-
-    // Initialize a random number generator
-    std::mt19937 rng(std::random_device{}());
-    std::normal_distribution<Dtype> dist(mean, std);
-
-    // Create a buffer to hold the random numbers
-    auto result = py::array_t<Dtype>(size);
-
-    auto ptr = result.mutable_data();
-    for (int i = 0; i < size; ++i) {
-        ptr[i] = dist(rng);
-    }
-
+    auto result = _generate_normal(shape, mean, std);
     auto tensor = Tensor<Dtype>(result, device);
-    return tensor.reshape(shape);
+    return tensor;
+}
+
+template<typename Dtype>
+std::shared_ptr<Tensor<Dtype>> randn_shptr(std::vector<int32_t> shape, 
+                   Dtype mean=static_cast<Dtype>(0.0), 
+                   Dtype std=static_cast<Dtype>(1.0),
+                   BackendType device=BackendType::CUDA) {
+
+    auto result = _generate_normal(shape, mean, std);
+    std::shared_ptr<Tensor<Dtype>> tensor = 
+        std::make_shared<Tensor<Dtype>>(new Tensor<Dtype>(result, device));
+
+    return tensor;
 }
 
 template<typename Dtype>
@@ -106,7 +144,7 @@ Tensor<Dtype> randb(std::vector<int32_t> shape,
 
     auto result = _generate_randb<Dtype>(shape, prob);
     auto tensor = Tensor<Dtype>(result, device);
-    return tensor.reshape(shape);
+    return tensor;
 }
 
 template<typename Dtype>
@@ -150,9 +188,10 @@ Tensor<Dtype> one_hot(int32_t size, int idx,
 
     ptr[idx] = static_cast<Dtype>(1.0);
     std::vector<int32_t> shape = {1,size};
+    p_arr.resize(shape);
 
     auto tensor = Tensor<Dtype>(p_arr, device);
-    return tensor.reshape(shape);
+    return tensor;
 }
 
 #endif

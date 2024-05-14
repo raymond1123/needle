@@ -195,6 +195,7 @@ void bind_init(py::module &m) {
     m.def("one_hot", &one_hot<Dtype>, py::arg("size"), py::arg("idx"),
                                     py::arg("device")=BackendType::CUDA);
 
+    /*
     m.def("xavier_uniform", &xavier_uniform<Dtype>, 
           py::arg("shape"), py::arg("gain")=1.0,
           py::arg("device")=BackendType::CUDA);
@@ -212,6 +213,7 @@ void bind_init(py::module &m) {
           py::arg("shape"), 
           py::arg("device")=BackendType::CUDA,
           py::arg("nonlinearity")="relu");
+    */
 }
 
 template<typename Dtype>
@@ -225,6 +227,7 @@ void bind_module(py::module &m) {
        .def("__call__", &Module<Dtype>::operator())
        .def("train", &Module<Dtype>::train)
        .def("eval", &Module<Dtype>::eval)
+       .def("parameters", &Module<Dtype>::parameters)
        .def("forward", &Module<Dtype>::forward);
 
     py::class_<Sequential<Dtype>, Module<Dtype>, 

@@ -13,10 +13,7 @@ public:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
     /* constructor */
-    Tensor() {
-        printf("ffffffff\n");
-    }
-
+    Tensor() {}
     Tensor(py::array_t<Dtype>& np_array, BackendType backend);
     Tensor(BackendType backend, 
            std::shared_ptr<GenericOp<Dtype>> op=nullptr,
@@ -30,6 +27,7 @@ public:
     /* move/cpy constructor */
     Tensor(Tensor&& other) noexcept;
     Tensor(const Tensor& other);
+    Tensor(Tensor* other);
 
     /* move/cpy operator= */
     Tensor& operator=(Tensor&& other) noexcept;
@@ -283,6 +281,28 @@ Tensor<Dtype>& Tensor<Dtype>::operator=(Tensor<Dtype>&& other) noexcept {
 template<typename Dtype>
 Tensor<Dtype>::Tensor(const Tensor& other): 
     __cached_data(other.__cached_data), __backend(other.__backend) {
+    /*
+    __cached_data = other.__cached_data->deep_cpy_cached_data();
+    __cached_data->op = other.__cached_data->op;
+    __cached_data->inputs = other.__cached_data->inputs;
+    __cached_data->grad = other.__cached_data->grad;
+    __cached_data->cached = other.__cached_data->cached;
+    __cached_data->is_compact = other.__cached_data->is_compact;
+    __cached_data->tensor_idx = other.__cached_data->tensor_idx;
+    */
+
+    #ifdef DEBUG
+    tensor_idx++;
+    __tensor_idx = tensor_idx;
+    __cached_data->tensor_idx = __tensor_idx;
+    __print_tensor_info("cpy ctor");
+    printf("tensor_idx:%d, cpy constructor\n", __tensor_idx);
+    #endif
+}
+
+template<typename Dtype>
+Tensor<Dtype>::Tensor(Tensor* other): 
+    __cached_data(other->__cached_data), __backend(other->__backend) {
     /*
     __cached_data = other.__cached_data->deep_cpy_cached_data();
     __cached_data->op = other.__cached_data->op;

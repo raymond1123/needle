@@ -13,7 +13,7 @@
 namespace py = pybind11;
 
 template<typename Dtype>
-Tensor<Dtype> xavier_uniform(std::vector<int32_t> shape, 
+std::shared_ptr<Tensor<Dtype>> xavier_uniform(std::vector<int32_t> shape, 
                              Dtype gain=1.0,
                              BackendType device=BackendType::CUDA) {
 
@@ -26,11 +26,11 @@ Tensor<Dtype> xavier_uniform(std::vector<int32_t> shape,
 
     Dtype high = gain*static_cast<Dtype>(scope(shape[0], shape[1]));
 
-    return rand(shape, -high, high, device);
+    return rand_shptr(shape, -high, high, device);
 }
 
 template<typename Dtype>
-Tensor<Dtype> xavier_normal(std::vector<int32_t> shape, 
+std::shared_ptr<Tensor<Dtype>> xavier_normal(std::vector<int32_t> shape, 
                              Dtype gain=1.0,
                              BackendType device=BackendType::CUDA) {
 
@@ -43,11 +43,11 @@ Tensor<Dtype> xavier_normal(std::vector<int32_t> shape,
 
     Dtype std = gain*static_cast<Dtype>(std_f(shape[0], shape[1]));
 
-    return randn(shape, static_cast<Dtype>(0.0), std, device);
+    return randn_shptr(shape, static_cast<Dtype>(0.0), std, device);
 }
 
 template<typename Dtype>
-Tensor<Dtype> kaiming_uniform(std::vector<int32_t> shape, 
+std::shared_ptr<Tensor<Dtype>> kaiming_uniform(std::vector<int32_t> shape, 
                               BackendType device=BackendType::CUDA,
                               std::string nonlinearity="relu") {
 
@@ -61,11 +61,11 @@ Tensor<Dtype> kaiming_uniform(std::vector<int32_t> shape,
 
     Dtype high = static_cast<Dtype>(scope(shape[0]));
 
-    return rand(shape, -high, high, device);
+    return rand_shptr(shape, -high, high, device);
 }
 
 template<typename Dtype>
-Tensor<Dtype> kaiming_normal(std::vector<int32_t> shape, 
+std::shared_ptr<Tensor<Dtype>> kaiming_normal(std::vector<int32_t> shape, 
                              BackendType device=BackendType::CUDA,
                              std::string nonlinearity="relu") {
 
@@ -79,7 +79,7 @@ Tensor<Dtype> kaiming_normal(std::vector<int32_t> shape,
 
     Dtype std = static_cast<Dtype>(std_f(shape[0]));
 
-    return randn(shape, static_cast<Dtype>(0.0), std, device);
+    return randn_shptr(shape, static_cast<Dtype>(0.0), std, device);
 }
 
 #endif

@@ -2,10 +2,7 @@
 #define __NN_MODULE_CUH__
 
 #include "tensor.cuh"
-#include "ops/bp/padding.cuh"
-
-template<typename Dtype>
-using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+#include "backend/base_tensor.hpp"
 
 /* special Tensor that represents parameters */
 template<typename Dtype>
@@ -16,6 +13,7 @@ template<typename Dtype>
 class Module {
 public:
     using module_type = std::shared_ptr<Module<Dtype>>;
+    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
     Module(): _training(true) {}
     Module(std::vector<module_type>& modules): 
@@ -39,6 +37,18 @@ public:
 
     inline std::vector<Tensor<Dtype>> operator()(std::vector<Tensor<Dtype>>& inputs) {
         return forward(inputs);
+    }
+
+    std::vector<cached_data_type> parameters() {
+
+        std::vector<cached_data_type> params;
+
+        for(int i = 0; i<get_modules().size(); ++i) {
+            for(auto& p: get_modules()[i]->_params)
+                _params.push_back(p);
+        }
+
+        return params;
     }
 
     virtual std::vector<Tensor<Dtype>> forward(std::vector<Tensor<Dtype>>& tensors) {
@@ -77,7 +87,7 @@ private:
 protected:
     bool _training;
     std::vector<module_type> _sub_modules;
-    //static std::vector<module_type> _modules;
+    std::vector<cached_data_type> _params;
 };
 
 template<typename Dtype>

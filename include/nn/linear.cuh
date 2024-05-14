@@ -23,17 +23,27 @@ public:
                 std::vector<int32_t> bias_shape = {1, _out_features};
                 _bias = kaiming_uniform<Dtype>(bias_shape, device, "relu");
             }
-        }
+
+            this->_params.push_back(_weight->cached_data());
+            this->_params.push_back(_bias->cached_data());
+    }
 
     void set_params(std::vector<py::array_t<Dtype>>& params,
                     BackendType device=BackendType::CUDA) {
         if(_need_bias) {
             assert(params.size()==2 && "param number of Linear with bias must be 2");
-            _bias = Tensor(params[1], device);
+            //_bias = Tensor(params[1], device);
+            _bias.reset(new Tensor(params[1], device));
         } else 
             assert(params.size()==1 && "param number of Linear without bias must be 1");
 
-        _weight = Tensor(params[0], device);
+        //_weight = Tensor(params[0], device);
+        _weight.reset(new Tensor(params[0], device));
+        _in_features = _weight->shape()[1];
+        _out_features = _weight->shape()[0];
+
+        this->_params.push_back(_weight->cached_data());
+        this->_params.push_back(_bias->cached_data());
     }
 
     virtual std::vector<Tensor<Dtype>> forward(std::vector<Tensor<Dtype>>& tensors) override {
@@ -43,19 +53,19 @@ public:
         assert(x.shape()[1]==_in_features &&"shape of input tensor and weight does not match");
 
         /* y = x@A.T + b */
-        auto weight_T = _weight.transpose({0,1});
+        auto weight_T = _weight->transpose({0,1});
         auto out = x.matmul(weight_T);
 
         if(_need_bias) {
-            out += _bias.broadcast_to(out.shape());
+            out += _bias->broadcast_to(out.shape());
         }
 
         return {out};
     }
 
 private:
-    Tensor<Dtype> _weight; // shape=(_in_features, _out_features)
-    Tensor<Dtype> _bias; // shape = (_out_features, 1)
+    std::shared_ptr<Tensor<Dtype>> _weight; // shape=(_in_features, _out_features)
+    std::shared_ptr<Tensor<Dtype>> _bias; // shape = (_out_features, 1)
 
     bool _need_bias;
     int _in_features;
