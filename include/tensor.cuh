@@ -13,6 +13,10 @@ public:
     using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
 
     /* constructor */
+    Tensor() {
+        printf("ffffffff\n");
+    }
+
     Tensor(py::array_t<Dtype>& np_array, BackendType backend);
     Tensor(BackendType backend, 
            std::shared_ptr<GenericOp<Dtype>> op=nullptr,
@@ -153,10 +157,11 @@ Tensor<Dtype>::Tensor(BackendType backend,
         throw std::runtime_error("Unsupported backend type.");
     }
 
-    #ifdef DEBUG
     tensor_idx++;
     __tensor_idx = tensor_idx;
     __cached_data->tensor_idx = __tensor_idx;
+
+    #ifdef DEBUG
     __print_tensor_info("ctor");
     #endif
 }
@@ -266,9 +271,6 @@ Tensor<Dtype>& Tensor<Dtype>::operator=(Tensor<Dtype>&& other) noexcept {
     __cached_data = other.__cached_data;
     __cached_data->tensor_idx = __tensor_idx;
 
-    other.__cached_data->op = nullptr;
-    for(auto& input: other.__cached_data->inputs)
-        input = nullptr;
     other.__cached_data = nullptr;
 
     #ifdef DEBUG
@@ -850,6 +852,7 @@ void Tensor<Dtype>::__topo_sort_dfs(
                 std::shared_ptr<BaseTensor<Dtype>> tensor_shptr, 
                 std::unordered_map<std::shared_ptr<BaseTensor<Dtype>>, bool>& visited,
                 std::vector<std::shared_ptr<BaseTensor<Dtype>>>& reverse_topo_order) {
+
     visited[tensor_shptr] = true;
     for(auto& input: tensor_shptr->inputs) {
         if(!visited[input]) {

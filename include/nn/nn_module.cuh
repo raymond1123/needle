@@ -1,5 +1,5 @@
-#ifndef __NN_BASIC_CUH__
-#define __NN_BASIC_CUH__
+#ifndef __NN_MODULE_CUH__
+#define __NN_MODULE_CUH__
 
 #include "tensor.cuh"
 #include "ops/bp/padding.cuh"
@@ -38,16 +38,12 @@ public:
     }
 
     inline std::vector<Tensor<Dtype>> operator()(std::vector<Tensor<Dtype>>& inputs) {
-        printf("ooooooooooo, %lu\n", get_modules().size());
         return forward(inputs);
     }
 
     virtual std::vector<Tensor<Dtype>> forward(std::vector<Tensor<Dtype>>& tensors) {
         std::vector<Tensor<Dtype>> inputs = tensors;
         std::vector<Tensor<Dtype>> out;
-
-        printf("aaaaaa: %lu\n", get_modules().size());
-        printf("bbbbbb: %lu\n", _sub_modules.size());
 
         for(int i = 0; i<get_modules().size(); ++i) {
             out = get_modules()[i]->forward(inputs);
@@ -67,7 +63,6 @@ protected:
         return _modules;
     }
 
-
 private:
     void __child_modules(std::vector<module_type> modules) {
         if(modules.size()==1 && modules[0]->_sub_modules.size()==0) {
@@ -84,7 +79,6 @@ protected:
     std::vector<module_type> _sub_modules;
     //static std::vector<module_type> _modules;
 };
-
 
 template<typename Dtype>
 class Sequential: public Module<Dtype> {
@@ -105,25 +99,6 @@ public:
         return out;
     }
 
-};
-
-template<typename Dtype>
-class Linear: public Module<Dtype> {
-
-public:
-    Linear(int in_features, int out_features): 
-        Module<Dtype>(), _in_features(in_features), _out_features(out_features) {}
-
-    virtual std::vector<Tensor<Dtype>> forward(std::vector<Tensor<Dtype>>& tensors) override {
-        printf("Linear forward: (%d, %d)\n", _in_features, _out_features);
-        return {};
-    }
-
-
-private:
-    std::vector<Tensor<Dtype>> _params;
-    int _in_features;
-    int _out_features;
 };
 
 #endif

@@ -1,9 +1,10 @@
 #include "tensor.cuh"
 #include "needle_util.cuh"
 #include "nn/function.cuh"
-#include "nn/nn_basic.cuh"
+#include "nn/nn_module.cuh"
+#include "nn/linear.cuh"
 #include "init/init_basic.cuh"
-#include "init/initial.cuh"
+#include "init/initial.hpp"
 
 namespace py = pybind11;
 
@@ -233,8 +234,16 @@ void bind_module(py::module &m) {
 
     py::class_<Linear<Dtype>, Module<Dtype>, 
                 std::shared_ptr<Linear<Dtype>>>(nn, "Linear")
-        .def(py::init<int, int>())
-        .def("forward", &Linear<Dtype>::forward);
+        .def(py::init<int, int, bool, BackendType>(),
+            py::arg("in_features"),
+            py::arg("out_features"),
+            py::arg("bias") = true,
+            py::arg("device") = BackendType::CUDA)
+        .def("forward", &Linear<Dtype>::forward)
+        .def("set_params", &Linear<Dtype>::set_params,
+            py::arg("params"),
+            py::arg("device")=BackendType::CUDA)
+        ;
 
 }
 
