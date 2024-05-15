@@ -13,7 +13,7 @@ template<typename Dtype>
 class Module {
 public:
     using module_type = std::shared_ptr<Module<Dtype>>;
-    using cached_data_type = std::shared_ptr<BaseTensor<Dtype>>;
+    using param_type = std::shared_ptr<Tensor<Dtype>>;
 
     Module(): _training(true) {}
     Module(std::vector<module_type>& modules): 
@@ -39,9 +39,9 @@ public:
         return forward(inputs);
     }
 
-    std::vector<cached_data_type> parameters() {
+    std::vector<param_type> parameters() {
 
-        std::vector<cached_data_type> params;
+        std::vector<param_type> params;
 
         for(int i = 0; i<get_modules().size(); ++i) {
             for(auto& p: get_modules()[i]->_params)
@@ -87,7 +87,7 @@ private:
 protected:
     bool _training;
     std::vector<module_type> _sub_modules;
-    std::vector<cached_data_type> _params;
+    std::vector<param_type> _params;
 };
 
 template<typename Dtype>

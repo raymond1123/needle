@@ -11,6 +11,8 @@ template<typename Dtype>
 class Linear: public Module<Dtype> {
 
 public:
+    using param_type = std::shared_ptr<Tensor<Dtype>>;
+
     Linear(int in_features, int out_features, 
            bool bias=true, BackendType device=BackendType::CUDA): 
         Module<Dtype>(), _need_bias(bias),
@@ -24,26 +26,24 @@ public:
                 _bias = kaiming_uniform<Dtype>(bias_shape, device, "relu");
             }
 
-            this->_params.push_back(_weight->cached_data());
-            this->_params.push_back(_bias->cached_data());
+            this->_params.push_back(_weight);
+            this->_params.push_back(_bias);
     }
 
     void set_params(std::vector<py::array_t<Dtype>>& params,
                     BackendType device=BackendType::CUDA) {
         if(_need_bias) {
             assert(params.size()==2 && "param number of Linear with bias must be 2");
-            //_bias = Tensor(params[1], device);
             _bias.reset(new Tensor(params[1], device));
         } else 
             assert(params.size()==1 && "param number of Linear without bias must be 1");
 
-        //_weight = Tensor(params[0], device);
         _weight.reset(new Tensor(params[0], device));
         _in_features = _weight->shape()[1];
         _out_features = _weight->shape()[0];
 
-        this->_params.push_back(_weight->cached_data());
-        this->_params.push_back(_bias->cached_data());
+        this->_params.push_back(_weight);
+        this->_params.push_back(_bias);
     }
 
     virtual std::vector<Tensor<Dtype>> forward(std::vector<Tensor<Dtype>>& tensors) override {
@@ -64,8 +64,10 @@ public:
     }
 
 private:
-    std::shared_ptr<Tensor<Dtype>> _weight; // shape=(_in_features, _out_features)
-    std::shared_ptr<Tensor<Dtype>> _bias; // shape = (_out_features, 1)
+    //std::shared_ptr<Tensor<Dtype>> _weight; // shape=(_in_features, _out_features)
+    //std::shared_ptr<Tensor<Dtype>> _bias; // shape = (_out_features, 1)
+    param_type _weight; // shape=(_in_features, _out_features)
+    param_type _bias; // shape = (_out_features, 1)
 
     bool _need_bias;
     int _in_features;

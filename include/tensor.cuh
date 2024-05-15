@@ -78,6 +78,7 @@ public:
 
     Tensor matmul(Tensor& other);
     Tensor& operator+=(const Tensor& other);
+    Tensor& operator-=(Tensor&& other);
 
     Tensor reshape(std::vector<int32_t> new_shape);
     Tensor flip(std::vector<int> axes);
@@ -359,6 +360,26 @@ Tensor<Dtype>& Tensor<Dtype>::operator+=(const Tensor<Dtype>& other) {
     std::shared_ptr<GenericOp<Dtype>> op = 
         std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
                                       OpType::EWAddTensor);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    inputs.push_back(other.__cached_data);
+    printf("===============+\n");
+
+    __cached_data = (*op)(op, inputs, __backend, true);
+
+    return *this;
+}
+
+template<typename Dtype>
+Tensor<Dtype>& Tensor<Dtype>::operator-=(Tensor<Dtype>&& other) {
+    //check same beakend 
+    assert(other.__backend == __backend && 
+           "backend of operators must be the same");
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<EWOp<Dtype>>(__cached_data->size(), 
+                                      OpType::EWMinusTensor);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
