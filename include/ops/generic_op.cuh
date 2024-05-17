@@ -47,7 +47,6 @@ public:
 //9.  template<Dtype> Tensor<Dtype> negate(const Tensor<Dtype>& a);
 //10. template<Dtype> Tensor<Dtype> log(const Tensor<Dtype>& a);
 //11. template<Dtype> Tensor<Dtype> exp(const Tensor<Dtype>& a);
-//12. template<Dtype> Tensor<Dtype> relu(const Tensor<Dtype>& a);
 //13. template<Dtype> Tensor<Dtype> tanh(const Tensor<Dtype>& a);
 //
 ///* input two tensor and two int; output one Tensor */

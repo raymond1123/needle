@@ -19,5 +19,6 @@
 #include "ops/bp/split.cuh"
 #include "ops/bp/dilate.cuh"
 #include "ops/bp/relu.cuh"
+#include "ops/bp/tanh.cuh"
 
 #endif

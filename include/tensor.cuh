@@ -93,6 +93,7 @@ public:
     Tensor padding(std::vector<int> axes);
     Tensor dilate(uint32_t dilation, std::vector<int> axes);
     Tensor relu();
+    Tensor tanh();
 
     /* backward */
     void backward();
@@ -723,6 +724,18 @@ template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::relu() {
     std::shared_ptr<GenericOp<Dtype>> op = 
         std::make_shared<ReluOp<Dtype>>(OpType::Relu);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::tanh() {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<TanhOp<Dtype>>(OpType::Tanh);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);

@@ -128,6 +128,7 @@ void bind_tensor(py::module &m, const char *name) {
         .def("sum", (Tensor<Dtype> (Tensor<Dtype>::*)()) &Tensor<Dtype>::summation, "Summation without specified axes")
         .def("max", &Tensor<Dtype>::max, py::arg("dim"), py::arg("keepdim")=false)
         .def("relu", &Tensor<Dtype>::relu)
+        .def("tanh", &Tensor<Dtype>::tanh)
         .def("__matmul__", &Tensor<Dtype>::matmul)
         .def("dilate", &Tensor<Dtype>::dilate, py::arg("dilation"), py::arg("axes"))
         .def("to_numpy", &Tensor<Dtype>::to_numpy)
