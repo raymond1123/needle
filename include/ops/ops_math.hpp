@@ -18,5 +18,6 @@
 #include "ops/bp/stack.cuh"
 #include "ops/bp/split.cuh"
 #include "ops/bp/dilate.cuh"
+#include "ops/bp/relu.cuh"
 
 #endif
