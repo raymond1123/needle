@@ -9,6 +9,7 @@
 #include "ops/bp/permute.cuh"
 #include "ops/bp/transpose.cuh"
 #include "ops/bp/summation.cuh"
+#include "ops/bp/max.cuh"
 #include "ops/bp/slice.cuh"
 #include "ops/bp/flip.cuh"
 #include "ops/bp/matmul.cuh"

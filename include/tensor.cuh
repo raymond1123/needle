@@ -89,6 +89,7 @@ public:
     Tensor transpose(std::vector<int> axes);
     Tensor summation(std::vector<int> axes);
     Tensor summation();
+    std::vector<Tensor> max(int dim, bool keepdim);
     Tensor padding(std::vector<int> axes);
     //Tensor dilate(std::vector<int> axes, uint32_t dilation);
     Tensor dilate(uint32_t dilation, std::vector<int> axes);
@@ -658,6 +659,37 @@ Tensor<Dtype> Tensor<Dtype>::summation() {
     printf("===============+\n");
 
     return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+std::vector<Tensor<Dtype>> Tensor<Dtype>::max(int dim, bool keepdim) {
+    /* calc output shape */
+    std::vector<int32_t> shape = __cached_data->shape(); 
+    std::vector<int32_t> out_shape; 
+
+    dim = dim<0?shape.size()+dim:dim;
+    for(int i=0; i<__cached_data->shape().size(); ++i) {
+        if(keepdim) {
+            if(i==dim) out_shape.push_back(1);
+            else out_shape.push_back(shape[i]);
+        } else {
+            if(i==dim) continue;
+            else out_shape.push_back(shape[i]);
+        }
+    }
+
+    auto idx = Tensor<Dtype>::zeros(out_shape, __backend);
+
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<MaxOp<Dtype>>(OpType::Max, dim, idx.__cached_data, keepdim);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    Tensor<Dtype> out = (*op)(op, inputs, __backend);
+
+    return {out, idx};
 }
 
 /*
