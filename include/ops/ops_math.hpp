@@ -20,5 +20,8 @@
 #include "ops/bp/dilate.cuh"
 #include "ops/bp/relu.cuh"
 #include "ops/bp/tanh.cuh"
+#include "ops/bp/log.cuh"
+#include "ops/bp/exp.cuh"
+#include "ops/bp/neg.cuh"
 
 #endif

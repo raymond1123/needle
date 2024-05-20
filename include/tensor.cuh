@@ -94,6 +94,9 @@ public:
     Tensor dilate(uint32_t dilation, std::vector<int> axes);
     Tensor relu();
     Tensor tanh();
+    Tensor log();
+    Tensor exp();
+    Tensor neg();
 
     /* backward */
     void backward();
@@ -736,6 +739,42 @@ template<typename Dtype>
 Tensor<Dtype> Tensor<Dtype>::tanh() {
     std::shared_ptr<GenericOp<Dtype>> op = 
         std::make_shared<TanhOp<Dtype>>(OpType::Tanh);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::log() {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<LogOp<Dtype>>(OpType::Log);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::exp() {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<ExpOp<Dtype>>(OpType::Exp);
+
+    std::vector<cached_data_type> inputs;
+    inputs.push_back(__cached_data);
+    printf("===============+\n");
+
+    return (*op)(op, inputs, __backend);
+}
+
+template<typename Dtype>
+Tensor<Dtype> Tensor<Dtype>::neg() {
+    std::shared_ptr<GenericOp<Dtype>> op = 
+        std::make_shared<NegOp<Dtype>>(OpType::Neg);
 
     std::vector<cached_data_type> inputs;
     inputs.push_back(__cached_data);
